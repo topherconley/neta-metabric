@@ -102,6 +102,7 @@ tmap <- expand.grid(lam1 = seq(70, 85, length = 5),
 #result directory
 respath <- "/home/cconley/scratch-data/neta-metabric/disc-cv-vote/basal/01/"
 
+library(spacemap)
 tictoc <- system.time({cvsmap <- cvVote(Y = Y, X = X, 
                                         trainIds = trainSets, testIds = testSets, 
                                         method = "spacemap", tuneGrid = tmap, 
