@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Christopher Conley, Pei Wang, Umut Ozbek, Jie Peng" />
+
+<meta name="date" content="2017-05-21" />
+
+<title>METABRIC Discovery Data Set</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/united.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-1.1/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-1.1/highlight.js"></script>
+<link href="site_libs/font-awesome-4.5.0/css/font-awesome.min.css" rel="stylesheet" />
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html"></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Discovery Data Set
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="disc-data-by-subtype.html">1. Data</a>
+    </li>
+    <li class="dropdown">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+        2. CV Vote
+         
+        <span class="caret"></span>
+      </a>
+      <ul class="dropdown-menu" role="menu">
+        <li class="dropdown-header">Basal</li>
+        <li>
+          <a href="bas-cv.html"></a>
+        </li>
+        <li class="dropdown-header">Her2</li>
+        <li>
+          <a href="her2-cv.html"></a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</li>
+<li>
+  <a href="https://github.com/topherconley/neta-metabric">
+    <span class="fa fa-github"></span>
+     
+    METABRIC Code
+  </a>
+</li>
+<li>
+  <a href="https://topherconley.github.io/spacemap/">spacemap</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">METABRIC Discovery Data Set</h1>
+<h4 class="author"><em>Christopher Conley, Pei Wang, Umut Ozbek, Jie Peng</em></h4>
+<h4 class="date"><em>2017-05-21</em></h4>
+
+</div>
+
+
+<p>The following analysis documents how we organize the METABRIC discovery data set into a standard <code>Biobase::ExpressionSet</code> format before input into the spaceMap model. The goal of this analysis is to ultimately fit the spaceMap model to infer a network encoding how copy number alteration (CNA) intervals impact RNA expression in breast cancer subtypes. Below we outline the data processing steps of this document in preparation for model fitting.</p>
+<ul>
+<li>Copy number alteration (CNA) ExpressionSet
+<ul>
+<li>Import result of Fixed-order clustering result which aggregates CNA into larger genomic intervals.</li>
+<li>Reduce the redundacy of cytoband alias for each CNA feature.</li>
+<li>Import clinical data and PAM50 molecular subtype information.</li>
+<li>Reformat existing CNA annotation into an ExpressionSet.</li>
+<li>Divide CNA data samples by PAM50 molecular subtypes into 5 ExpressionSet objects.</li>
+</ul></li>
+<li>mRNA expression ExpressionSet
+<ul>
+<li>Import discovery data set and filter out probes with poor quality.</li>
+<li>Filter out probes by subtype with median absolute deviation across samples below the 93% percentile.</li>
+<li>Assure filtering probes by subtype still has sufficient overlap of probes between subtypes.</li>
+<li>Gather gene locations of mRNA probes.</li>
+<li>Divide mRNA data samples by each PAM50 subtype into 5 ExpressionSet objects.</li>
+</ul></li>
+<li>Extreme Outlier Removal
+<ul>
+<li>Identify outlying samples in mRNA and CNA ExpressionSets (by subtype) with <a href="http://dx.doi.org/10.1016/j.csda.2007.05.018">PCout</a> algorithm.</li>
+<li>Remove most extreme outlying samples.</li>
+</ul></li>
+<li>Highly Correlated Features
+<ul>
+<li>Validate mRNA has no ultra-high correlation among mRNA probes.</li>
+<li>Resolve ultra-high correlation among CNA events.</li>
+</ul></li>
+<li>Partition samples for cross validation.</li>
+</ul>
+<div id="copy-number-alteration-cna-data" class="section level2">
+<h2>Copy Number Alteration (CNA) data</h2>
+<p>The aCGH data containing the CNA features was reported by the METABRIC authors in several formats. Experience of Pei Wang’s group at Mount Sinai has found the segmentation format, rather than gene-level summaries, to be better input to our analysis pipeline. Specifically, Umut Ozbek input the CBS-based segmentation data into the Fixed-Order clustering altorithm to further aggregate and call CNA features.</p>
+<p>The raw data for this project is currently stored locally to keep the file size down.</p>
+<pre class="r"><code>discdir &lt;- &quot;~/scratch-data/neta-metabric/disc-data/&quot;</code></pre>
+<p>We will store the intermediate filtered data here:</p>
+<pre class="r"><code>filterdir &lt;- &quot;~/scratch-data/neta-metabric/disc-filtered/&quot;</code></pre>
+<p>We now import and validate the data.</p>
+<pre class="r"><code>cna0 &lt;- new.env()
+load(envir = cna0, file = file.path(discdir, &quot;Metabric_CNA_FOC160322_2K.Rdata&quot;))</code></pre>
+<p>The Fixed-order clustering algorithm determined 2380 CNA intervals in the discovery data set . As seen in the following object, there are 997 samples that have METABRIC sample ID’s in the column names and the CNA intervals are contained in the rows.</p>
+<pre class="r"><code>str(cna0$CNA.FOC.data.new)</code></pre>
+<pre><code>##  num [1:2380, 1:997] 0.0593 0.0593 0.0593 0.0593 -0.204 ...
+##  - attr(*, &quot;dimnames&quot;)=List of 2
+##   ..$ : NULL
+##   ..$ : chr [1:997] &quot;MB-0135&quot; &quot;MB-0167&quot; &quot;MB-0136&quot; &quot;MB-3403&quot; ...</code></pre>
+<p>The specific gene coordinates of these 2380 CNA intervals are reported as well (see next object).</p>
+<pre class="r"><code>#assure equal dimension
+stopifnot(nrow(cna0$CNA.FOC.loca.new) == nrow(cna0$CNA.FOC.data.new))
+kable(head(cna0$CNA.FOC.loca.new))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">ch.interval.iter2</th>
+<th align="right">begin.nuc.iter2</th>
+<th align="right">end.nuc.iter2</th>
+<th align="right">size.iter2</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">593454</td>
+<td align="right">615334</td>
+<td align="right">2</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">814000</td>
+<td align="right">993492</td>
+<td align="right">10</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">1008567</td>
+<td align="right">1500664</td>
+<td align="right">16</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">1618687</td>
+<td align="right">1642256</td>
+<td align="right">2</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">1727801</td>
+<td align="right">5561260</td>
+<td align="right">98</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">5666096</td>
+<td align="right">6428714</td>
+<td align="right">18</td>
+</tr>
+</tbody>
+</table>
+<div id="cytoband-redundancy" class="section level3">
+<h3>Cytoband redundancy</h3>
+<p>The cytoband information is reported in the following object:</p>
+<pre class="r"><code>stopifnot(length(cna0$CNA.FOC.n.new) == nrow(cna0$CNA.FOC.data.new))
+head(cna0$CNA.FOC.n.new)</code></pre>
+<pre><code>## [1] &quot;1p36.33-1p36.33&quot; &quot;1p36.33-1p36.33&quot; &quot;1p36.33-1p36.33&quot; &quot;1p36.33-1p36.33&quot;
+## [5] &quot;1p36.33-1p36.31&quot; &quot;1p36.31-1p36.31&quot;</code></pre>
+<p>Notice there is a bit of redundancy in the cytoband intervals. Improve the cytoband information to be as non-redundant as possible through the following function.</p>
+<pre class="r"><code>nr_cytobands &lt;- function(cb) { 
+  split_cb &lt;- unlist(strsplit(x = cb, split = &quot;-&quot;))
+  if(length(split_cb) != 2) { 
+    return(cb)
+  }
+
+  split_cb2 &lt;- unlist(strsplit(x = split_cb, split = &quot;p|q&quot;))
+  pq1 &lt;- regmatches(split_cb[1], m= regexpr(pattern = &quot;[pq]+&quot;, text = split_cb[1])) 
+  pq2 &lt;- regmatches(split_cb[2], m= regexpr(pattern = &quot;[pq]+&quot;, text = split_cb[2])) 
+  same_arm &lt;- pq1 == pq2
+  chr1 &lt;- split_cb2[1]
+  chr2 &lt;- split_cb2[3]
+  same_chr &lt;- chr1 == chr2
+  loc1 &lt;- as.numeric(split_cb2[2])
+  loc2 &lt;- as.numeric(split_cb2[4])
+  same_loc &lt;- loc1 == loc2
+  
+  if( same_chr &amp; same_arm &amp; same_loc) { 
+    paste0(chr1, pq1, loc1)
+  } else if (same_chr &amp; same_arm &amp; !same_loc) {
+    paste0(chr1, pq1, min(loc1,loc2), &quot;-&quot;, max(loc1,loc2))
+  } else if (same_chr &amp; !same_arm &amp; same_loc) { 
+    paste0(chr1, pq1, loc1, &quot;-&quot;, pq2, loc2)
+  } else if (same_chr &amp; !same_arm &amp; !same_loc) { 
+    paste0(chr1, pq1, loc1, &quot;-&quot;, chr2, pq2, loc2)
+  } else if (!same_chr) { 
+    paste0(chr1, pq1, loc1, &quot;-&quot;, chr2, pq2, loc2)
+  }
+}
+tmp &lt;- data.frame(original = cna0$CNA.FOC.n.new,
+                  nr = sapply(cna0$CNA.FOC.n.new, nr_cytobands))
+nr_cytoband_ids &lt;- as.character(tmp$nr)</code></pre>
+<p>Inspection of the cytoband information reveals that the redundancy has been reduced.</p>
+<pre class="r"><code>kable(tmp[sample.int(n = nrow(tmp), size = 6),])</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="left">original</th>
+<th align="left">nr</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2213</td>
+<td align="left">19q13.11-19q13.11</td>
+<td align="left">19q13.11</td>
+</tr>
+<tr class="even">
+<td>410</td>
+<td align="left">3p26.2-3p26.1</td>
+<td align="left">3p26.1-26.2</td>
+</tr>
+<tr class="odd">
+<td>1631</td>
+<td align="left">12p11.21-12p11.1</td>
+<td align="left">12p11.1-11.21</td>
+</tr>
+<tr class="even">
+<td>165</td>
+<td align="left">2p22.3-2p22.2</td>
+<td align="left">2p22.2-22.3</td>
+</tr>
+<tr class="odd">
+<td>529</td>
+<td align="left">3q22.1-3q22.1</td>
+<td align="left">3q22.1</td>
+</tr>
+<tr class="even">
+<td>1906</td>
+<td align="left">15q21.2-15q21.3</td>
+<td align="left">15q21.2-21.3</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="cna-expressionset" class="section level3">
+<h3>CNA ExpressionSet</h3>
+<p>Since the cytoband information is not unique we will form unique ID’s for the CNA features based on the gene coordinates.</p>
+<pre class="r"><code>cnapos &lt;- cna0$CNA.FOC.loca.new[,c(&quot;ch.interval.iter2&quot;, &quot;begin.nuc.iter2&quot;, &quot;end.nuc.iter2&quot;)]
+cnaids &lt;- apply( cnapos, 1 , paste , collapse = &quot;_&quot; )
+stopifnot(!anyDuplicated(cnaids))
+head(cnaids)</code></pre>
+<pre><code>## [1] &quot;1_593454_615334&quot;   &quot;1_814000_993492&quot;   &quot;1_1008567_1500664&quot;
+## [4] &quot;1_1618687_1642256&quot; &quot;1_1727801_5561260&quot; &quot;1_5666096_6428714&quot;</code></pre>
+<p>Store the CNA attributes in a way that will be compatible with spacemap’s network analysis toolkit. The CNA attributes must have a unique feature ID, an alias that can be displayed in downstream visualizations, the genomic coordinates, as well a type attribute indicating that it is a predictor variable.</p>
+<pre class="r"><code>cna_node_attributes &lt;- data.frame(id = cnaids,
+                                 alias = nr_cytoband_ids,
+                                 chr = paste0(&quot;chr&quot;, cnapos[,&quot;ch.interval.iter2&quot;]),
+                                 start =  cnapos[,&quot;begin.nuc.iter2&quot;],
+                                 end = cnapos[,&quot;end.nuc.iter2&quot;],
+                                 stringsAsFactors = FALSE, 
+                                 row.names = cnaids)
+kable(head(cna_node_attributes), row.names = F)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">id</th>
+<th align="left">alias</th>
+<th align="left">chr</th>
+<th align="right">start</th>
+<th align="right">end</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">1_593454_615334</td>
+<td align="left">1p36.33</td>
+<td align="left">chr1</td>
+<td align="right">593454</td>
+<td align="right">615334</td>
+</tr>
+<tr class="even">
+<td align="left">1_814000_993492</td>
+<td align="left">1p36.33</td>
+<td align="left">chr1</td>
+<td align="right">814000</td>
+<td align="right">993492</td>
+</tr>
+<tr class="odd">
+<td align="left">1_1008567_1500664</td>
+<td align="left">1p36.33</td>
+<td align="left">chr1</td>
+<td align="right">1008567</td>
+<td align="right">1500664</td>
+</tr>
+<tr class="even">
+<td align="left">1_1618687_1642256</td>
+<td align="left">1p36.33</td>
+<td align="left">chr1</td>
+<td align="right">1618687</td>
+<td align="right">1642256</td>
+</tr>
+<tr class="odd">
+<td align="left">1_1727801_5561260</td>
+<td align="left">1p36.31-36.33</td>
+<td align="left">chr1</td>
+<td align="right">1727801</td>
+<td align="right">5561260</td>
+</tr>
+<tr class="even">
+<td align="left">1_5666096_6428714</td>
+<td align="left">1p36.31</td>
+<td align="left">chr1</td>
+<td align="right">5666096</td>
+<td align="right">6428714</td>
+</tr>
+</tbody>
+</table>
+<p>Now label the CNA features with their newly formed IDs in the assay data.</p>
+<pre class="r"><code>cna_assay &lt;- cna0$CNA.FOC.data.new
+rownames(cna_assay) &lt;- cnaids
+str(cna_assay)</code></pre>
+<pre><code>##  num [1:2380, 1:997] 0.0593 0.0593 0.0593 0.0593 -0.204 ...
+##  - attr(*, &quot;dimnames&quot;)=List of 2
+##   ..$ : chr [1:2380] &quot;1_593454_615334&quot; &quot;1_814000_993492&quot; &quot;1_1008567_1500664&quot; &quot;1_1618687_1642256&quot; ...
+##   ..$ : chr [1:997] &quot;MB-0135&quot; &quot;MB-0167&quot; &quot;MB-0136&quot; &quot;MB-3403&quot; ...</code></pre>
+</div>
+<div id="clinical-data-import" class="section level3">
+<h3>Clinical data import</h3>
+<p>Import the clinical features associated with the discovery data set. This data also contains the PAM50 molecular subtype information.</p>
+<pre class="r"><code>suppressPackageStartupMessages(library(xlsx))
+clinical &lt;- read.csv(file = file.path(discdir, &quot;Complete_METABRIC_Clinical_Features_Data.csv&quot;))</code></pre>
+<p>Organize the clinical variables for the discovery set. There are 2 samples of the 997 discovery set that have no clinical information available. We order the clinical variables according to the CNA sample IDs.</p>
+<pre class="r"><code>names(clinical)[1] &lt;- &quot;Metabric_ID&quot;
+#subset the discovery set
+pheno_data &lt;- clinical[clinical$Metabric_ID %in% colnames(cna_assay),]
+#needs to be character vector for filling in missing sample ids
+pheno_data$Metabric_ID &lt;- as.character(pheno_data$Metabric_ID)
+#identify sample ids without clinical features
+missing_clinical &lt;- colnames(cna_assay)[!(colnames(cna_assay) %in% clinical$Metabric_ID)]
+#sort to match the order of the CNA assay data
+pheno_data &lt;- pheno_data[match(colnames(cna_assay),pheno_data$Metabric_ID),]
+#fill in missing ids so can be included in Expression Set
+pheno_data[which(is.na(pheno_data$Metabric_ID)),&quot;Metabric_ID&quot;] &lt;- missing_clinical
+rownames(pheno_data) &lt;- pheno_data$Metabric_ID
+stopifnot(identical(rownames(pheno_data), colnames(cna_assay)))</code></pre>
+<p>We combine the CNA interval data with the clinical variables and CNA attributes into an <code>ExpressionSet</code> object.</p>
+<pre class="r"><code>suppressPackageStartupMessages(library(Biobase))
+cnaset &lt;- ExpressionSet(assayData = cna_assay, 
+                        phenoData = AnnotatedDataFrame(pheno_data),
+                        featureData =  AnnotatedDataFrame(data = cna_node_attributes))
+saveRDS(object = cnaset, file = file.path(filterdir, &quot;disc-cna-eset-2.rds&quot;))
+cnaset</code></pre>
+<pre><code>## ExpressionSet (storageMode: lockedEnvironment)
+## assayData: 2380 features, 997 samples 
+##   element names: exprs 
+## protocolData: none
+## phenoData
+##   sampleNames: MB-0135 MB-0167 ... MB-0606 (997 total)
+##   varLabels: Metabric_ID age_at_diagnosis ... X.1 (27 total)
+##   varMetadata: labelDescription
+## featureData
+##   featureNames: 1_593454_615334 1_814000_993492 ...
+##     22_48999738_49420315 (2380 total)
+##   fvarLabels: id alias ... end (5 total)
+##   fvarMetadata: labelDescription
+## experimentData: use &#39;experimentData(object)&#39;
+## Annotation:</code></pre>
+</div>
+<div id="cna-expressionset-by-subtype" class="section level3">
+<h3>CNA ExpressionSet by subtype</h3>
+<p>Subset the CNA assay by the subtype. Standardize the data of the subtypes.</p>
+<pre class="r"><code>subtypes &lt;- c(&quot;Basal&quot;, &quot;Her2&quot;, &quot;LumA&quot;, &quot;LumB&quot;, &quot;Normal&quot;)
+get_cna_subtype &lt;- function(subtype) { 
+  levels(pheno_data$NOT_IN_OSLOVAL_Pam50Subtype)
+  idx_subtype &lt;- pheno_data$NOT_IN_OSLOVAL_Pam50Subtype == subtype
+  idx_not_missing &lt;- !is.na(pheno_data$NOT_IN_OSLOVAL_Pam50Subtype)
+  cnaset_subtype &lt;- cnaset[,idx_subtype &amp; idx_not_missing]
+  #no standardization
+  saveRDS(object = cnaset_subtype, file = file.path(filterdir, paste0(&quot;disc-cna-eset-nostd-&quot;, subtype,&quot;.rds&quot;)))
+  #standardization
+  exprs(cnaset_subtype) &lt;- t(scale(t(exprs(cnaset_subtype))))
+  saveRDS(object = cnaset_subtype, file = file.path(filterdir, paste0(&quot;disc-cna-eset-&quot;, subtype,&quot;.rds&quot;)))
+  cnaset_subtype
+}
+cna_subtypes &lt;- lapply(subtypes, get_cna_subtype)
+names(cna_subtypes) &lt;- subtypes</code></pre>
+</div>
+</div>
+<div id="mrna-data" class="section level2">
+<h2>mRNA Data</h2>
+<p>Import the mRNA expression from the discovery samples with the <code>data.table::fread</code> function, which is quicker for very large data sets such as this. The first row in the text file contains the sample ID and is not read by <code>fread</code> because the first column of the text file is a probe ID that is not indicated as such in the first row.</p>
+<pre class="r"><code>library(data.table)
+rna0 &lt;- fread(file = file.path(discdir, &quot;discovery_ExpressionMatrix.txt&quot;))</code></pre>
+<pre><code>## Warning in fread(file = file.path(discdir,
+## &quot;discovery_ExpressionMatrix.txt&quot;)): Starting data input on line 2 and
+## discarding line 1 because it has too few or too many items to be column
+## names or data: MB-0362 MB-0346 MB-0386 MB-0574 MB-0185 MB-0503 MB-0641
+## MB-0201 MB-0218 MB-0316 MB-0189 MB-0891 MB-0658 MB-0899 MB-0605 MB-0258
+## MB-0506 MB-0420 MB-0223 MB-0445 MB-0199 MB-0517 MB-0155 MB-0428 MB-0117
+## MB-0906 MB-0249 MB-0660 MB-0497 MB-0434 MB-0143 MB-0513 MB-0541 MB-0653
+## MB-0455 MB-0540 MB-0384 MB-0637 MB-0157 MB-0443 MB-0584 MB-0292 MB-0322
+## MB-0501 MB-0401 MB-0140 MB-0606 MB-0666 MB-0598 MB-0453 MB-0138 MB-0579
+## MB-0405 MB-0471 MB-0347 MB-0619 MB-0171 MB-0310 MB-0621 MB-0614 MB-0372
+## MB-0374 MB-0382 MB-0327 MB-0066 MB-0144 MB-0596 MB-0164 MB-0215 MB-0146
+## MB-0229 MB-0505 MB-0102 MB-0569 MB-0516 MB-0272 MB-0585 MB-0494 MB-0306
+## MB-0463 MB-0198 MB-0203 MB-0607 MB-0631 MB-0363 MB-0427 MB-0519 MB-0371
+## MB-0380 MB-0221 MB-0348 MB-0261 MB-0576 MB-0385 MB-0659 MB-0270 MB-0379
+## MB-0432 MB-0527 MB-0624 MB-0273 MB-0050 MB-0460 MB-0654 MB-0454 MB-0392
+## MB-0336 MB-0467 MB-0349 MB-0378 [... truncated]</code></pre>
+<pre><code>## 
+Read 0.0% of 48803 rows
+Read 20.5% of 48803 rows
+Read 41.0% of 48803 rows
+Read 61.5% of 48803 rows
+Read 82.0% of 48803 rows
+Read 48803 rows and 998 (of 998) columns from 0.766 GB file in 00:00:57</code></pre>
+<p>We remedy this situation and relabel the <code>data.table</code> object’s first column as probe IDs and the rest of the columns are labeled with sample IDs.</p>
+<pre class="r"><code>tmp &lt;- readLines(file.path(discdir, &quot;discovery_ExpressionMatrix.txt&quot;), n = 2)
+rna0_sample_ids &lt;- unlist(strsplit(x = tmp[1], split = &quot;\t&quot;))
+row2 &lt;- unlist(strsplit(x = tmp[2], split = &quot;\t&quot;))
+#head(rna0[1,])
+#head(row2)
+colnames(rna0) &lt;- c(&quot;PROBE_ID&quot;, rna0_sample_ids)</code></pre>
+<p>Reformat the mRNA data as a matrix with probe IDs as row names and column names as sample IDs.</p>
+<pre class="r"><code>rna1 &lt;- as.matrix(rna0[,2:ncol(rna0)])
+rownames(rna1) &lt;- rna0[,PROBE_ID]
+#no missing values
+stopifnot(!any(is.na(rna1)))
+#no negative expression values
+stopifnot(!any(rna1 &lt; 0))
+str(rna1)</code></pre>
+<pre><code>##  num [1:48803, 1:997] 8.68 5.3 5.43 6.08 5.6 ...
+##  - attr(*, &quot;dimnames&quot;)=List of 2
+##   ..$ : chr [1:48803] &quot;ILMN_1802380&quot; &quot;ILMN_1893287&quot; &quot;ILMN_1736104&quot; &quot;ILMN_1792389&quot; ...
+##   ..$ : chr [1:997] &quot;MB-0362&quot; &quot;MB-0346&quot; &quot;MB-0386&quot; &quot;MB-0574&quot; ...</code></pre>
+<p>Remove the large mRNA <code>data.table</code> object from the R sessions’s workspace.</p>
+<pre class="r"><code>rm(rna0)</code></pre>
+<div id="filter-out-poor-quality-probes" class="section level3">
+<h3>Filter out poor quality probes</h3>
+<p>Define a function to extract specific annotation attributes of RNA features from the “illuminaHumanv3.db” database.</p>
+<pre class="r"><code>suppressPackageStartupMessages(library(illuminaHumanv3.db))
+#illuminaHumanv3listNewMappings()
+#?illuminaHumanv3listNewMappings
+hs_feature_list &lt;- function(db, eg) { 
+  mk &lt;- mappedkeys(db)
+  xx &lt;- as.list(db[eg[eg %in% mk]])
+}</code></pre>
+<p>Extract the probe quality labels and inspect their distribution.</p>
+<pre class="r"><code>pq &lt;- unlist(hs_feature_list(illuminaHumanv3PROBEQUALITY, rownames(rna1)))
+table(pq)</code></pre>
+<pre><code>## pq
+##         Bad        Good     Good***    Good****    No match     Perfect 
+##       13475         925         148         358         966       24687 
+##  Perfect*** Perfect**** 
+##        6269        1975</code></pre>
+<p>Only keep those probes that have good or perfect quality.</p>
+<pre class="r"><code>suff_quality_index &lt;- !(pq %in% c(&quot;Bad&quot;, &quot;No match&quot;))
+rna2 &lt;- rna1[suff_quality_index,]
+#rm(rna1)</code></pre>
+</div>
+<div id="filter-out-all-but-highly-variable-probes" class="section level3">
+<h3>Filter out all but highly variable probes</h3>
+<p>Partition the samples by breast cancer subtype and then apply a dispersion filter to identify the top 7% highly variable genes according to median absolute deviation (MAD). Report the gene sets for each subtype.</p>
+<pre class="r"><code>get_filtered_rna_subtype_index &lt;- function(subtype, prob_thresh = 0.93) {
+  same_sample_order_index &lt;- match(sampleNames(cna_subtypes[[subtype]]), colnames(rna2))
+  #assure that every sample maps from CNA to RNA
+  stopifnot(!any(is.na(same_sample_order_index)))
+  #filter by subtype
+  rna_subtype &lt;- rna2[,same_sample_order_index]
+  #median absolute deviation filter
+  madhat_rna_subtype &lt;- apply(X = rna_subtype, MARGIN = 1, FUN = mad)
+  madhat_thresh &lt;- quantile(x = madhat_rna_subtype, probs =prob_thresh)
+  keep_mad_index &lt;- which(madhat_rna_subtype &gt; madhat_thresh)
+  rownames(rna_subtype)[keep_mad_index]
+}
+rfi &lt;- lapply(subtypes, get_filtered_rna_subtype_index, prob_thresh = 0.93)
+names(rfi) &lt;- subtypes</code></pre>
+</div>
+<div id="overlap-of-probes-between-subtypes" class="section level3">
+<h3>Overlap of probes between subtypes</h3>
+<p>Each gene set has 2406 genes. We verify that the pair-wise intersection of each subtype gene set exceeds 60%.</p>
+<pre class="r"><code>intersected_rfi &lt;- Reduce(intersect, rfi)
+pwm &lt;- combn(x = 1:5, 2)
+pwi &lt;- lapply(1:ncol(pwm), function(j) Reduce(intersect, rfi[pwm[,j]]))
+pwn &lt;- sapply(1:ncol(pwm), function(j) paste(subtypes[pwm[1,j]], subtypes[pwm[2,j]], sep = &quot;-&quot;))
+pwp &lt;- sapply(pwi, length) / length(rfi[[1]])
+names(pwp) &lt;- pwn
+pwp</code></pre>
+<pre><code>##   Basal-Her2   Basal-LumA   Basal-LumB Basal-Normal    Her2-LumA 
+##    0.6251039    0.6188695    0.6076475    0.6438071    0.6492103 
+##    Her2-LumB  Her2-Normal    LumA-LumB  LumA-Normal  LumB-Normal 
+##    0.6571072    0.6325852    0.8088113    0.7148795    0.6625104</code></pre>
+<p>Since there is sufficient pair-wise overlap we move forward with each subtype with a separate CNA-RNA network. Below we note the intersection of all these subtype gene sets is relatively small.</p>
+<pre class="r"><code>intersected_rfi &lt;- Reduce(intersect, rfi)
+length(intersected_rfi)/length(rfi[[1]])</code></pre>
+<pre><code>## [1] 0.3886118</code></pre>
+</div>
+<div id="gene-locations" class="section level3">
+<h3>Gene locations</h3>
+<p>Prepare the annotation of RNA features to be compatible with spaceMap’s workflow. Next we use the full re-annotation of the mRNA features, which is consistent with the details of the Curtis et. al (2012) supplement.</p>
+<pre class="r"><code>suppressPackageStartupMessages(library(DBI))
+rna_reannot0 &lt;- illuminaHumanv3fullReannotation()
+uprobes &lt;- Reduce(union, rfi)
+rna_reannot &lt;- rna_reannot0[rna_reannot0$IlluminaID %in% uprobes,]
+rna_reannot &lt;- rna_reannot[match(uprobes, rna_reannot$IlluminaID),]
+stopifnot(identical(rna_reannot$IlluminaID, uprobes))
+rna_loc_multi &lt;- strsplit(x =rna_reannot$GenomicLocation, split = &quot;,&quot;)
+single_loc_index &lt;- sapply(rna_loc_multi, length) == 1
+rna_loc_single &lt;- rna_loc_multi[single_loc_index]
+multi_loc_index &lt;- sapply(rna_loc_multi, length) &gt; 1
+rna_loc_multi2 &lt;- rna_loc_multi[multi_loc_index]
+rna_loc_multi3 &lt;- lapply(rna_loc_multi2, function(x) x[1])
+rna_loc_multi4 &lt;- lapply(rna_loc_multi2, function(x) x[2])
+
+single_loc &lt;- function(sloc) { 
+  sloc2 &lt;-  lapply(sloc, function(x) { 
+    unlist(strsplit(x, split = &quot;:&quot;))
+  })
+  #which have less than 4 attributes 
+  misinfo &lt;- which(sapply(sloc2, length) &lt; 4)
+  #assure those missing any of the four attributes miss them all
+  #this keeps the next function simple
+  stopifnot(all(is.na(sloc2[misinfo])))
+  as.data.frame(data.table::rbindlist(
+    lapply(sloc2, 
+           function(x) 
+             if (all(is.na(x))) { 
+               data.frame(chr = NA, start = NA, end = NA, strand = NA) 
+             } else { 
+               data.frame(chr = x[1], start = x[2],
+                          end = x[3], strand = x[4], 
+                          stringsAsFactors = FALSE)
+             }
+    ))) 
+}
+
+#undebug(single_loc)
+rna_loc1 &lt;- single_loc(rna_loc_single)
+rna_loc2 &lt;- single_loc(rna_loc_multi3)
+io &lt;- c(which(single_loc_index), which(multi_loc_index))
+rna_reannot$chr[io] &lt;- c(rna_loc1$chr, rna_loc2$chr)
+rna_reannot$start[io] &lt;- c(rna_loc1$start, rna_loc2$start)
+rna_reannot$end[io] &lt;- c(rna_loc1$end, rna_loc2$end)
+rna_reannot$strand[io] &lt;- c(rna_loc1$strand, rna_loc2$strand)
+#View(rna_reannot)
+#View(rna_reannot[,c(&quot;GenomicLocation&quot;,&quot;chr&quot;, &quot;start&quot;, &quot;end&quot;, &quot;strand&quot;)])</code></pre>
+<p>Reformat the list into a data.frame that can be stored in an <code>Biobase::ExpressionSet</code> object.</p>
+<pre class="r"><code>df &lt;- rna_reannot
+df$type &lt;- &quot;y&quot;
+names(df)[names(df)==&quot;IlluminaID&quot;] &lt;- &quot;id&quot;
+names(df)[names(df)==&quot;SymbolReannotated&quot;] &lt;- &quot;alias&quot;
+required_attr &lt;- match(c(&quot;id&quot;, &quot;alias&quot;,&quot;chr&quot;, &quot;start&quot;, &quot;end&quot;,  &quot;strand&quot;, &quot;type&quot;) , 
+                       names(df))
+rna_node_attributes &lt;- df[,c(required_attr, setdiff(1:ncol(df), required_attr))]
+rownames(rna_node_attributes) &lt;- rna_node_attributes$id</code></pre>
+</div>
+<div id="mrna-expressionset-by-subtype" class="section level3">
+<h3>mRNA ExpressionSet by subtype</h3>
+<p>Create the final mRNA <code>ExpressionSet</code> object for each subtype. Create a standardized version and a non-standardized version.</p>
+<pre class="r"><code>get_rnaset_by_subtype &lt;- function(subtype) { 
+  ###############
+  #EXPRESSION DATA
+  same_sample_order_index &lt;- match(sampleNames(cna_subtypes[[subtype]]), colnames(rna2))
+  #assure that every sample maps from CNA to RNA
+  stopifnot(!any(is.na(same_sample_order_index)))
+  #filter by subtype
+  rna_subtype &lt;- rna2[,same_sample_order_index]
+  #and by top genes in the subtype
+  rna_subtype &lt;- rna_subtype[rfi[[subtype]],]
+  #assure that the column order does match
+  stopifnot(identical(colnames(rna_subtype), 
+                      sampleNames(cna_subtypes[[subtype]])))
+  #assure that the column order does match
+  stopifnot(identical(colnames(rna_subtype), 
+                      sampleNames(cna_subtypes[[subtype]])))
+  ##############
+  #FEATURE DATA
+  attr_idx &lt;- match(rfi[[subtype]], rna_node_attributes$id)
+  #should be no missing
+  stopifnot(all(!is.na(attr_idx)))
+  fst &lt;- rna_node_attributes[attr_idx,]
+  #assure that the rna attributes match 
+  #the row names of the rna expression matrix
+  stopifnot(identical(rownames(rna_subtype),
+                      rownames(fst)))
+  #EXPRESSION SET
+  #no standardized data
+  rnaset &lt;- ExpressionSet(assayData = rna_subtype, 
+                          phenoData = phenoData(cna_subtypes[[subtype]]),
+                          featureData =  AnnotatedDataFrame(data = fst))
+  saveRDS(object = rnaset, 
+          file = file.path(filterdir, paste0(&quot;disc-mrna-eset-nostd-&quot;, subtype,  &quot;.rds&quot;)))
+  #standardized data
+  #Make the RNA expression matrix to have mean zero and standard deviation 1. 
+  rna_subtype &lt;- t(scale(t(rna_subtype)))
+  rnaset &lt;- ExpressionSet(assayData = rna_subtype, 
+                          phenoData = phenoData(cna_subtypes[[subtype]]),
+                          featureData =  AnnotatedDataFrame(data = fst))
+  saveRDS(object = rnaset, 
+          file = file.path(filterdir, paste0(&quot;disc-mrna-eset-&quot;, subtype,  &quot;.rds&quot;)))
+  rnaset
+}
+rnaset_subtypes &lt;- lapply(subtypes, get_rnaset_by_subtype)
+names(rnaset_subtypes) &lt;- subtypes</code></pre>
+</div>
+</div>
+<div id="outlier-analysis" class="section level2">
+<h2>Outlier Analysis</h2>
+<p><a href="http://dx.doi.org/10.1016/j.csda.2007.05.018">Filzmoser et al.</a> introduced a method called <code>PCOut</code> for outlier detection in high dimension that is computationally fast. It is implemented in the CRAN package <a href="https://github.com/cran/mvoutlier/blob/master/R/pcout.R">mvoutlier</a> and leverages a semi-robust principal component decomposition to identify outliers of two types: those samples that differ in their location parameter from the rest of the samples and those that differ in their scatter (scale). We applied <code>PCout</code> for each subtype.</p>
+<p>The wrapper function <code>outlier_analysis</code> performs outlier analysis for each subtype on the standardized data.</p>
+<pre class="r"><code>suppressPackageStartupMessages(library(mvoutlier))
+suppressPackageStartupMessages(library(Biobase))
+subtypes &lt;- c(&quot;LumA&quot;, &quot;LumB&quot;, &quot;Basal&quot;, &quot;Her2&quot;, &quot;Normal&quot;)
+outlier_analysis &lt;- function(subtype, dtype) { 
+  eset &lt;- readRDS(file = file.path(paste0(&quot;~/scratch-data/neta-metabric/disc-filtered/disc-&quot;, 
+                                          dtype,&quot;-eset-&quot;, subtype, &quot;.rds&quot;)))
+  expression &lt;- t(exprs(eset))
+  pco &lt;- pcout(x = expression)
+  pco
+}</code></pre>
+<p>Identify outlying values for both mRNA and CNA data.</p>
+<pre class="r"><code>moa &lt;- lapply(subtypes, outlier_analysis, dtype = &quot;mrna&quot;)
+coa &lt;- lapply(subtypes, outlier_analysis, dtype = &quot;cna&quot;)</code></pre>
+<p>Visualize the outliers for each subtype and report the ratio of potential outliers to total samples.</p>
+<pre class="r"><code>library(ggplot2)
+plot_outliers &lt;- function(pco) { 
+  ggdat &lt;- data.frame(outlier = ifelse(pco$wfinal01 == 0, &quot;outlier&quot;, &quot;non-outlier&quot;),
+                      loc = pco$x.dist1,
+                      scat = pco$x.dist2
+                      )
+  ggplot(data = ggdat, aes(x = loc, y = scat, colour = outlier)) + 
+    geom_point() + theme_bw() + 
+    xlab(&quot;Location Distance&quot;) + ylab(&quot;Scatter Distance&quot;)
+}
+
+oa_fig &lt;- function(o, loa) { 
+  plot_outliers(loa[[o]]) + 
+    ggtitle(paste0(subtypes[o], &quot;: &quot;, 
+                   sum(loa[[o]]$wfinal01 == 0), &quot; / &quot;, 
+                   length(loa[[o]]$wfinal01)))
+}</code></pre>
+<div id="mrna-based-outlier-samples" class="section level3">
+<h3>mRNA-based outlier samples</h3>
+<pre class="r"><code>moaf &lt;- lapply(seq_along(moa), oa_fig, loa = moa)
+suppressPackageStartupMessages(library(gridExtra))
+do.call(&quot;grid.arrange&quot;, c(moaf, ncol=2))</code></pre>
+<p><img src="disc-data-by-subtype_files/figure-html/unnamed-chunk-32-1.png" width="672" /></p>
+</div>
+<div id="cna-based-outlier-samples" class="section level3">
+<h3>CNA-based outlier samples</h3>
+<pre class="r"><code>coaf &lt;- lapply(seq_along(coa), oa_fig, loa = coa)
+do.call(&quot;grid.arrange&quot;, c(coaf, ncol=2))</code></pre>
+<p><img src="disc-data-by-subtype_files/figure-html/unnamed-chunk-33-1.png" width="672" /></p>
+</div>
+<div id="remove-the-most-extreme-outliers" class="section level3">
+<h3>Remove the most extreme outliers</h3>
+<p>Identify the extreme outliers by sample names for both mRNA and CNA data types under each breast cancer subtype. The location distance ought to be sufficient to identify the most extreme outliers using thresholds for each subtype. Not all samples labeled as “outlier” in the previous plot will be removed.</p>
+<pre class="r"><code>names(moa) &lt;- subtypes
+names(coa) &lt;- subtypes
+outlier_by_loc &lt;- function(loa, subtype, thresh_loc) { 
+  ids_sorted &lt;- sort(loa[[subtype]]$x.dist1, 
+                     index.return = T, decreasing = T)
+  out_ids &lt;- names(ids_sorted$x[ids_sorted$x &gt; thresh_loc])
+}
+#thresholds
+mrna_thresh_locs &lt;- c(27, 25, 18, 20, 20)
+cna_thresh_locs &lt;- c(82, 60, 25, 30, 250)
+mrna_outlier_ids &lt;- lapply(seq_along(subtypes), 
+                           function(i) outlier_by_loc(loa = moa, 
+                                                      subtypes[i],
+                                                      mrna_thresh_locs[i]))
+names(mrna_outlier_ids) &lt;- subtypes
+cna_outlier_ids &lt;- lapply(seq_along(subtypes), 
+                          function(i) outlier_by_loc(loa = coa, 
+                                                     subtypes[i], 
+                                                     cna_thresh_locs[i]))
+names(cna_outlier_ids) &lt;- subtypes
+names(mrna_outlier_ids) &lt;- subtypes
+saveRDS(object = mrna_outlier_ids, 
+        file = &quot;~/scratch-data/neta-metabric/disc-filtered/mrna_outlier_ids.rds&quot;)
+saveRDS(object = cna_outlier_ids, 
+        file = &quot;~/scratch-data/neta-metabric/disc-filtered/cna_outlier_ids.rds&quot;)
+union_outliers_ids &lt;- lapply(seq_along(moa), 
+                             function(i) union(mrna_outlier_ids[[i]], cna_outlier_ids[[i]]))
+names(union_outliers_ids) &lt;- subtypes
+overlap_outliers_ids &lt;- lapply(seq_along(moa), 
+                               function(i) intersect(mrna_outlier_ids[[i]], cna_outlier_ids[[i]]))
+names(overlap_outliers_ids) &lt;- subtypes</code></pre>
+<p>Take the union of the outliers and report their number for each subtype.</p>
+<pre class="r"><code>sapply(union_outliers_ids, length)</code></pre>
+<pre><code>##   LumA   LumB  Basal   Her2 Normal 
+##      5     10      6      5      4</code></pre>
+<p>There is no overlap between mRNA and CNA data types in terms of outliers.</p>
+<pre class="r"><code>sapply(overlap_outliers_ids, length)</code></pre>
+<pre><code>##   LumA   LumB  Basal   Her2 Normal 
+##      0      0      0      0      0</code></pre>
+<p>We decided to remove the most extreme outliers in both mRNA and CNA data types for each breast cancer subtype. We save the ExpressionSets after dropping out the extreme outliers.</p>
+<pre class="r"><code>filterdir &lt;- &quot;~/scratch-data/neta-metabric/disc-filtered/&quot;
+make_eset_without_outliers &lt;-  function(subtype, dtype) { 
+  f &lt;- list.files(path = filterdir, 
+                  full.names = T, pattern = paste0(dtype, &quot;-eset-nostd-&quot;, subtype))
+  stopifnot(nchar(f) &gt; 0)
+  eset &lt;- readRDS(file = f)
+  out_idx &lt;- which(sampleNames(eset) %in% union_outliers_ids[[subtype]])
+  eset_no_out &lt;- eset[,-out_idx]
+  upf &lt;- sub(pattern = subtype, 
+             replacement = paste0(&quot;union-dropout-nostd-&quot;, subtype), x = f, fixed = T)
+  saveRDS(eset_no_out, file = upf)
+  exprs(eset_no_out) &lt;- t(scale(t(exprs(eset_no_out))))
+  upf2 &lt;- sub(pattern = subtype, 
+              replacement = paste0(&quot;union-dropout-std-&quot;, subtype), x = f, fixed = T)
+  saveRDS(eset_no_out, file = upf2)
+  eset_no_out
+}
+rnaset_subtypes &lt;- sapply(subtypes, make_eset_without_outliers, dtype = &quot;mrna&quot;)
+cnaset_subtypes &lt;- sapply(subtypes, make_eset_without_outliers, dtype = &quot;cna&quot;)</code></pre>
+</div>
+<div id="highly-correlated-probes" class="section level3">
+<h3>Highly Correlated Probes</h3>
+<p>Identify the number of highly correlated probes (pairwise correlation exceeding 0.999) for each subtype and report how many highly correlated probes come from the same gene.</p>
+<pre class="r"><code>hc_probes &lt;- function(subtype, thresh =  0.999) { 
+  eset &lt;- readRDS(file = file.path(filterdir, 
+                                   paste0(&quot;disc-mrna-eset-nostd-union-dropout-std-&quot;,
+                                          subtype, &quot;.rds&quot;)))
+  expression &lt;- t(exprs(eset))
+  coro &lt;- cor(x = expression)
+  p &lt;- nrow(coro)
+  pcoro &lt;- list()
+  cntr &lt;- 1
+  for(i in 1:(p - 1)) {
+    for(j in (i + 1):p) {
+      if(coro[i,j] &gt; thresh) { 
+        pcoro[[cntr]] &lt;- c(i,j)
+        cntr &lt;- cntr + 1
+      }  
+        
+    }
+  }
+
+  fd &lt;- featureData(eset)
+  fd &lt;- fd@data
+  alias &lt;- fd$alias
+  id &lt;- fd$id
+  if (length(pcoro) &gt; 0 ) { 
+    dup &lt;- sapply(pcoro, function(pc) anyDuplicated(alias[pc]) &gt; 0)
+    if (sum(dup) &gt; 0 ) { 
+      dalias &lt;- sapply(pcoro[dup], function(pc) alias[pc[1]])  
+    } else { 
+      dalias &lt;- NA  
+    }
+  } else { 
+    dup &lt;- vector()
+    dalias &lt;- NA
+  }
+  
+list(subtype = subtype, 
+       hcp = pcoro, 
+       ndup = sum(dup), 
+       nhcp = length(dup), 
+       alias = dalias)
+}
+hc_probe_by_subtype &lt;- lapply(subtypes, hc_probes, thresh = 0.999)
+names(hc_probe_by_subtype) &lt;- subtypes</code></pre>
+<p>Tabulate the highly correlated probes by subtype.</p>
+<pre class="r"><code>lhc &lt;- lapply(hc_probe_by_subtype, function(x) data.frame(ndup = x$ndup, nhcp = x$nhcp))
+dhc &lt;- do.call(&quot;rbind&quot;, lhc)
+names(dhc) &lt;- c(&quot;No. Mapping to Same Gene&quot;, &quot;No. of Highly Correlated Probe Pairs&quot;)
+library(knitr)
+kable(dhc[,2:1])</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="right">No. of Highly Correlated Probe Pairs</th>
+<th align="right">No. Mapping to Same Gene</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>LumA</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td>LumB</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td>Basal</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td>Her2</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td>Normal</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p>There are no highly correlated probes at this extreme threshold. This is a good sign that the similar probes do not suffer from extreme cases of cross-hybridization.</p>
+<p>The mRNA Expression sets to use in model tuning are:</p>
+<pre class="r"><code>list.files(path = filterdir, pattern = &quot;disc-mrna-eset-nostd-union-dropout-std-&quot;)</code></pre>
+<pre><code>## [1] &quot;disc-mrna-eset-nostd-union-dropout-std-Basal.rds&quot; 
+## [2] &quot;disc-mrna-eset-nostd-union-dropout-std-Her2.rds&quot;  
+## [3] &quot;disc-mrna-eset-nostd-union-dropout-std-LumA.rds&quot;  
+## [4] &quot;disc-mrna-eset-nostd-union-dropout-std-LumB.rds&quot;  
+## [5] &quot;disc-mrna-eset-nostd-union-dropout-std-Normal.rds&quot;</code></pre>
+</div>
+<div id="highly-correlated-cna" class="section level3">
+<h3>Highly Correlated CNA</h3>
+<p>Use the same <a href="https://rdrr.io/cran/fpc/man/dbscan.html">density-based scan clustering algorithm</a> as was done in the network analysis of <a href="https://topherconley.github.io/neta-bcpls/data.html">BCPLS</a> to find ultra-correlated CNA. In this analysis (although not shown) the LumA has no ultra-correlated CNA and Normal has the most ultra-correlated CNA pairs.We assured that the ultra-correlated CNA pairs were within 4 Mb for the Normal-like data set and the rest of the subtypes’ ultra-correlated CNA pairs were within .5 MB of each other. This reflects the spatial correlation of these features. If there is a group of ultra-correlated CNA features, we take just one of the features and drop the other features in the group from the data set. However, we make a note the dropped CNA features through the <code>clustered_with</code> attribute of the CNA feature that was kept in the CNA ExpressionSets.</p>
+<pre class="r"><code>hc_cna &lt;- function(subtype) {
+  eset &lt;- readRDS(file = file.path(filterdir, 
+                                   paste0(&quot;disc-cna-eset-nostd-union-dropout-nostd-&quot;, 
+                                          subtype, &quot;.rds&quot;)))
+  X &lt;- t(exprs(eset))
+  library(fpc)
+  dR &lt;- 1 - abs(cor(X))
+  clout &lt;- fpc::dbscan(data = dR, MinPts = 2, eps = 1e-3, method = &quot;dist&quot;)
+  
+  suppressWarnings(library(stringdist))
+  library(foreach)
+  clusterDistr &lt;- as.data.frame(table(clout$cluster), stringAsFactors = FALSE)
+  #Cluster `0` corresponds to sufficiently independent CNA&#39;s.
+  #Omit it from the multi-colinear analysis.
+  if(nrow(clusterDistr) == 1) { 
+    #nothing clustered
+    exprs(eset) &lt;- t(scale(t(exprs(eset))))
+    saveRDS(object = eset, 
+            file = file.path(filterdir, 
+                             paste0(&quot;disc-cna-eset-nostd-union-dropout-multi-std&quot;, 
+                                    subtype, &quot;.rds&quot;)))
+    return(eset)
+  }
+  mcolinear &lt;- clusterDistr$Var1[2:nrow(clusterDistr)]
+  
+  namesMultiCol &lt;- foreach(i = seq_along(mcolinear)) %do% {
+    colnames(X[,clout$cluster == mcolinear[i]])
+  }
+  
+  #assure that those being collapsed are within 4Mb of each other
+  #note: all subtypes, except Normal-Like collapse features 
+  #that are within .5 Mb of each other.
+  toResolve &lt;- namesMultiCol
+  simdist &lt;- function(x) { 
+    coords &lt;- pData(featureData(eset[x,]))
+    last &lt;- nrow(coords)
+    if(coords$chr[1] != coords$chr[last]) { 
+      FALSE
+    } else { 
+      (coords$start[last] - coords$end[1]) &lt; 4e6  
+    }
+  }
+  stopifnot(all(sapply(toResolve, simdist)))
+  
+  keep &lt;- sapply(toResolve, function(x) x[1])
+  as_clustered &lt;- sapply(toResolve, function(x) x[2:length(x)])
+  drop_clustered &lt;- unlist(as_clustered)
+  eset2 &lt;- eset[!(featureNames(eset) %in% drop_clustered),]
+  fd2 &lt;- pData(featureData(eset2))
+  fd2$clustered_with &lt;- NA
+  fd2$clustered_with[fd2$id %in% keep] &lt;- sapply(as_clustered, 
+                                                 function(x)
+                                                   paste0(x, collapse = &quot;; &quot;))
+  eset2@featureData &lt;- AnnotatedDataFrame(fd2)
+  #standardize after subtype -&gt; no outliers -&gt; no multi
+  exprs(eset2) &lt;- t(scale(t(exprs(eset2))))
+  saveRDS(object = eset2, 
+          file = file.path(filterdir, 
+                           paste0(&quot;disc-cna-eset-nostd-union-dropout-multi-std-&quot;,
+                                  subtype, &quot;.rds&quot;)))
+  eset2
+}
+esets &lt;- sapply(subtypes, hc_cna)</code></pre>
+<p>The CNA Expression sets to use in model tuning are:</p>
+<pre class="r"><code>list.files(path = filterdir, pattern = &quot;disc-cna-eset-nostd-union-dropout-multi-std&quot;)</code></pre>
+<pre><code>## [1] &quot;disc-cna-eset-nostd-union-dropout-multi-std-Basal.rds&quot; 
+## [2] &quot;disc-cna-eset-nostd-union-dropout-multi-std-Her2.rds&quot;  
+## [3] &quot;disc-cna-eset-nostd-union-dropout-multi-std-LumB.rds&quot;  
+## [4] &quot;disc-cna-eset-nostd-union-dropout-multi-std-Normal.rds&quot;
+## [5] &quot;disc-cna-eset-nostd-union-dropout-multi-stdLumA.rds&quot;</code></pre>
+</div>
+</div>
+<div id="cross-validation-folds" class="section level2">
+<h2>Cross Validation Folds</h2>
+<p>Partition samples of each subtype into mutually exclusive test sets. We do not balance the samples of the test sets with any clinical covariate.</p>
+<pre class="r"><code>set.seed(153135)
+get_cvfold_subtypes &lt;- function(subtype, k = 10) { 
+  #install.packages(&quot;caret&quot;, dependencies = T)
+  suppressPackageStartupMessages(library(caret))
+  rnaset &lt;- rnaset_subtypes[[subtype]]
+  N &lt;- ncol(rnaset)
+  #dummy class
+  dummy_class &lt;- sample(x = c(&quot;A&quot;,&quot;B&quot;), size = N, replace = TRUE)
+  test_set &lt;- createFolds(y = dummy_class, k = k)
+  test_set_len &lt;- sapply(test_set, length)
+  train_set &lt;- lapply(test_set, function(fold) setdiff(1:N, fold))
+  train_set_len &lt;- sapply(train_set, length)
+  #assert no overlap
+  stopifnot(length(intersect(train_set$Fold01, test_set$Fold01)) == 0)
+  saveRDS(object = test_set, 
+          file = file.path(filterdir, paste0(&quot;discovery_test_sets_dropout&quot;, 
+                                             subtype, &quot;.rds&quot;)))
+  saveRDS(object = train_set, 
+          file = file.path(filterdir, paste0(&quot;discovery_train_sets_dropout&quot;, 
+                                             subtype, &quot;.rds&quot;)))
+  list(test = test_set, train = train_set)
+}
+cvfolds &lt;- lapply(subtypes, get_cvfold_subtypes)</code></pre>
+</div>
+<div id="session-info" class="section level2">
+<h2>Session Info</h2>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>## R version 3.4.0 (2017-04-21)
+## Platform: x86_64-w64-mingw32/x64 (64-bit)
+## Running under: Windows 10 x64 (build 14393)
+## 
+## Matrix products: default
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.1252 
+## [2] LC_CTYPE=English_United States.1252   
+## [3] LC_MONETARY=English_United States.1252
+## [4] LC_NUMERIC=C                          
+## [5] LC_TIME=English_United States.1252    
+## 
+## attached base packages:
+## [1] stats4    parallel  stats     graphics  grDevices utils     datasets 
+## [8] methods   base     
+## 
+## other attached packages:
+##  [1] caret_6.0-76              lattice_0.20-35          
+##  [3] foreach_1.4.3             stringdist_0.9.4.4       
+##  [5] fpc_2.1-10                gridExtra_2.2.1          
+##  [7] ggplot2_2.2.1             mvoutlier_2.0.8          
+##  [9] sgeostat_1.0-27           DBI_0.6-1                
+## [11] illuminaHumanv3.db_1.26.0 org.Hs.eg.db_3.4.0       
+## [13] AnnotationDbi_1.36.2      IRanges_2.8.2            
+## [15] S4Vectors_0.12.2          data.table_1.10.4        
+## [17] Biobase_2.34.0            BiocGenerics_0.20.0      
+## [19] xlsx_0.5.7                xlsxjars_0.6.1           
+## [21] rJava_0.9-8               knitr_1.15.1             
+## 
+## loaded via a namespace (and not attached):
+##  [1] splines_3.4.0         sp_1.2-4              yaml_2.1.14          
+##  [4] robustbase_0.92-7     RSQLite_1.1-2         backports_1.0.5      
+##  [7] VIM_4.7.0             quantreg_5.33         digest_0.6.12        
+## [10] RColorBrewer_1.1-2    minqa_1.2.4           colorspace_1.3-2     
+## [13] htmltools_0.3.6       Matrix_1.2-10         plyr_1.8.4           
+## [16] pcaPP_1.9-61          SparseM_1.77          mvtnorm_1.0-6        
+## [19] scales_0.4.1          lme4_1.1-13           MatrixModels_0.4-1   
+## [22] tibble_1.3.0          mgcv_1.8-17           car_2.1-4            
+## [25] nnet_7.3-12           lazyeval_0.2.0        pbkrtest_0.4-7       
+## [28] magrittr_1.5          mclust_5.2.3          memoise_1.1.0        
+## [31] evaluate_0.10         GGally_1.3.0          laeken_0.4.6         
+## [34] nlme_3.1-131          MASS_7.3-47           class_7.3-14         
+## [37] tools_3.4.0           trimcluster_0.1-2     stringr_1.2.0        
+## [40] kernlab_0.9-25        munsell_0.4.3         cluster_2.0.6        
+## [43] pls_2.6-0             compiler_3.4.0        e1071_1.6-8          
+## [46] vcd_1.4-3             grid_3.4.0            nloptr_1.0.4         
+## [49] iterators_1.0.8       cvTools_0.3.2         rmarkdown_1.5        
+## [52] boot_1.3-19           ModelMetrics_1.1.0    codetools_0.2-15     
+## [55] gtable_0.2.0          flexmix_2.3-14        reshape_0.8.6        
+## [58] reshape2_1.4.2        rrcov_1.4-3           robCompositions_2.0.3
+## [61] zoo_1.8-0             prabclus_2.2-6        sROC_0.1-2           
+## [64] rprojroot_1.2         modeltools_0.2-21     stringi_1.1.5        
+## [67] Rcpp_0.12.10          diptest_0.75-7        DEoptimR_1.0-8       
+## [70] lmtest_0.9-35</code></pre>
+</div>
+
+<p>Copyright &copy; 2017 Regents of the University of California. All rights reserved.</p>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

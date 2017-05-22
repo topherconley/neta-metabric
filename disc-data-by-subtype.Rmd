@@ -1,0 +1,774 @@
+---
+title: "METABRIC Discovery Data Set"
+author: "Christopher Conley, Pei Wang, Umut Ozbek, Jie Peng"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(cache=TRUE, cache.path = "~/scratch-data/neta-metabric/disc-filtered/disc-data-by-subtype-cache/")
+```
+
+The following analysis documents how we organize the METABRIC discovery data set into a standard `Biobase::ExpressionSet` format before input into the spaceMap model. The goal of this analysis is to ultimately fit the spaceMap model to infer a network encoding how copy number alteration (CNA) intervals impact RNA expression in breast cancer subtypes. Below we outline the data processing steps of this document in preparation for model fitting. 
+
+
++ Copy number alteration (CNA)  ExpressionSet
+    - Import result of Fixed-order clustering result which aggregates CNA into larger genomic intervals.
+    - Reduce the redundacy of cytoband alias for each CNA feature.
+    - Import clinical data and PAM50 molecular subtype information.
+    - Reformat existing CNA annotation into an ExpressionSet.
+    - Divide CNA data samples by PAM50 molecular subtypes into 5 ExpressionSet objects.
++ mRNA expression ExpressionSet
+    - Import discovery data set and filter out probes with poor quality.
+    - Filter out probes by subtype with median absolute deviation across samples below the 93% percentile.
+    - Assure filtering probes by subtype still has sufficient overlap of probes between subtypes.
+    - Gather gene locations of mRNA probes.
+    - Divide mRNA data samples by each PAM50 subtype into 5 ExpressionSet objects.
++ Extreme Outlier Removal
+    - Identify outlying samples in mRNA and CNA ExpressionSets (by subtype) with 
+    [PCout](http://dx.doi.org/10.1016/j.csda.2007.05.018) algorithm.
+    - Remove most extreme outlying samples.
++ Highly Correlated Features
+    - Validate mRNA has no ultra-high correlation among mRNA probes. 
+    - Resolve ultra-high correlation among CNA events.
++ Partition samples for cross validation.
+
+## Copy Number Alteration (CNA) data
+
+The aCGH data containing the CNA features was reported by the METABRIC authors in several formats. Experience of Pei Wang's group at Mount Sinai has found the segmentation format, rather than gene-level summaries, to be better input to our analysis pipeline. Specifically, Umut Ozbek input the CBS-based segmentation data into the Fixed-Order clustering altorithm to further aggregate and call CNA features. 
+
+
+The raw data for this project is currently stored locally to keep the file size down.
+```{r}
+discdir <- "~/scratch-data/neta-metabric/disc-data/"
+```
+
+We will store the intermediate filtered data here: 
+
+```{r}
+filterdir <- "~/scratch-data/neta-metabric/disc-filtered/"
+```
+
+
+We now import and validate the data.
+
+```{r}
+cna0 <- new.env()
+load(envir = cna0, file = file.path(discdir, "Metabric_CNA_FOC160322_2K.Rdata"))
+```
+
+The Fixed-order clustering algorithm determined 2380 CNA intervals in the discovery data set . As seen in the  following object, there are 997 samples that have METABRIC sample ID's in the column names and the CNA intervals are contained in the rows. 
+
+```{r}
+str(cna0$CNA.FOC.data.new)
+```
+
+The specific gene coordinates of these 2380 CNA intervals are reported as well (see next object).
+
+```{r}
+#assure equal dimension
+stopifnot(nrow(cna0$CNA.FOC.loca.new) == nrow(cna0$CNA.FOC.data.new))
+kable(head(cna0$CNA.FOC.loca.new))
+```
+
+### Cytoband redundancy
+
+The cytoband information is reported in the following object: 
+
+```{r}
+stopifnot(length(cna0$CNA.FOC.n.new) == nrow(cna0$CNA.FOC.data.new))
+head(cna0$CNA.FOC.n.new)
+```
+
+Notice there is a bit of redundancy in the cytoband intervals. Improve the cytoband information to be as non-redundant as possible through the following function. 
+
+```{r}
+nr_cytobands <- function(cb) { 
+  split_cb <- unlist(strsplit(x = cb, split = "-"))
+  if(length(split_cb) != 2) { 
+    return(cb)
+  }
+
+  split_cb2 <- unlist(strsplit(x = split_cb, split = "p|q"))
+  pq1 <- regmatches(split_cb[1], m= regexpr(pattern = "[pq]+", text = split_cb[1])) 
+  pq2 <- regmatches(split_cb[2], m= regexpr(pattern = "[pq]+", text = split_cb[2])) 
+  same_arm <- pq1 == pq2
+  chr1 <- split_cb2[1]
+  chr2 <- split_cb2[3]
+  same_chr <- chr1 == chr2
+  loc1 <- as.numeric(split_cb2[2])
+  loc2 <- as.numeric(split_cb2[4])
+  same_loc <- loc1 == loc2
+  
+  if( same_chr & same_arm & same_loc) { 
+    paste0(chr1, pq1, loc1)
+  } else if (same_chr & same_arm & !same_loc) {
+    paste0(chr1, pq1, min(loc1,loc2), "-", max(loc1,loc2))
+  } else if (same_chr & !same_arm & same_loc) { 
+    paste0(chr1, pq1, loc1, "-", pq2, loc2)
+  } else if (same_chr & !same_arm & !same_loc) { 
+    paste0(chr1, pq1, loc1, "-", chr2, pq2, loc2)
+  } else if (!same_chr) { 
+    paste0(chr1, pq1, loc1, "-", chr2, pq2, loc2)
+  }
+}
+tmp <- data.frame(original = cna0$CNA.FOC.n.new,
+                  nr = sapply(cna0$CNA.FOC.n.new, nr_cytobands))
+nr_cytoband_ids <- as.character(tmp$nr)
+```
+
+Inspection of the cytoband information reveals that the redundancy has been reduced. 
+
+```{r}
+kable(tmp[sample.int(n = nrow(tmp), size = 6),])
+```
+
+### CNA ExpressionSet
+
+Since the cytoband information is not unique we will form unique ID's for the CNA features based on the gene coordinates. 
+
+```{r}
+cnapos <- cna0$CNA.FOC.loca.new[,c("ch.interval.iter2", "begin.nuc.iter2", "end.nuc.iter2")]
+cnaids <- apply( cnapos, 1 , paste , collapse = "_" )
+stopifnot(!anyDuplicated(cnaids))
+head(cnaids)
+```
+
+
+Store the CNA attributes in a way that will be compatible with spacemap's network analysis toolkit. The CNA attributes must have a unique feature ID, an alias that can be displayed in downstream visualizations, the genomic coordinates, as well a type attribute indicating that it is a predictor variable. 
+
+```{r}
+cna_node_attributes <- data.frame(id = cnaids,
+                                 alias = nr_cytoband_ids,
+                                 chr = paste0("chr", cnapos[,"ch.interval.iter2"]),
+                                 start =  cnapos[,"begin.nuc.iter2"],
+                                 end = cnapos[,"end.nuc.iter2"],
+                                 stringsAsFactors = FALSE, 
+                                 row.names = cnaids)
+kable(head(cna_node_attributes), row.names = F)
+```
+
+Now label the CNA features with their newly formed IDs in the assay data.  
+
+```{r}
+cna_assay <- cna0$CNA.FOC.data.new
+rownames(cna_assay) <- cnaids
+str(cna_assay)
+```
+
+###  Clinical data import
+
+Import the clinical features associated with the discovery data set. This data also contains the PAM50 molecular subtype information.
+
+```{r}
+suppressPackageStartupMessages(library(xlsx))
+clinical <- read.csv(file = file.path(discdir, "Complete_METABRIC_Clinical_Features_Data.csv"))
+```
+
+
+Organize the clinical variables for the discovery set. There are 2 samples of the 997 discovery set that have no clinical information available. We order the clinical variables according to the CNA sample IDs.
+
+```{r}
+names(clinical)[1] <- "Metabric_ID"
+#subset the discovery set
+pheno_data <- clinical[clinical$Metabric_ID %in% colnames(cna_assay),]
+#needs to be character vector for filling in missing sample ids
+pheno_data$Metabric_ID <- as.character(pheno_data$Metabric_ID)
+#identify sample ids without clinical features
+missing_clinical <- colnames(cna_assay)[!(colnames(cna_assay) %in% clinical$Metabric_ID)]
+#sort to match the order of the CNA assay data
+pheno_data <- pheno_data[match(colnames(cna_assay),pheno_data$Metabric_ID),]
+#fill in missing ids so can be included in Expression Set
+pheno_data[which(is.na(pheno_data$Metabric_ID)),"Metabric_ID"] <- missing_clinical
+rownames(pheno_data) <- pheno_data$Metabric_ID
+stopifnot(identical(rownames(pheno_data), colnames(cna_assay)))
+```
+
+We combine the CNA interval data with the clinical variables and CNA attributes into an `ExpressionSet` object. 
+
+```{r}
+suppressPackageStartupMessages(library(Biobase))
+cnaset <- ExpressionSet(assayData = cna_assay, 
+                        phenoData = AnnotatedDataFrame(pheno_data),
+                        featureData =  AnnotatedDataFrame(data = cna_node_attributes))
+saveRDS(object = cnaset, file = file.path(filterdir, "disc-cna-eset-2.rds"))
+cnaset
+```
+
+### CNA ExpressionSet by subtype
+
+Subset the CNA assay by the subtype. Standardize the data of the subtypes. 
+
+```{r}
+subtypes <- c("Basal", "Her2", "LumA", "LumB", "Normal")
+get_cna_subtype <- function(subtype) { 
+  levels(pheno_data$NOT_IN_OSLOVAL_Pam50Subtype)
+  idx_subtype <- pheno_data$NOT_IN_OSLOVAL_Pam50Subtype == subtype
+  idx_not_missing <- !is.na(pheno_data$NOT_IN_OSLOVAL_Pam50Subtype)
+  cnaset_subtype <- cnaset[,idx_subtype & idx_not_missing]
+  #no standardization
+  saveRDS(object = cnaset_subtype, file = file.path(filterdir, paste0("disc-cna-eset-nostd-", subtype,".rds")))
+  #standardization
+  exprs(cnaset_subtype) <- t(scale(t(exprs(cnaset_subtype))))
+  saveRDS(object = cnaset_subtype, file = file.path(filterdir, paste0("disc-cna-eset-", subtype,".rds")))
+  cnaset_subtype
+}
+cna_subtypes <- lapply(subtypes, get_cna_subtype)
+names(cna_subtypes) <- subtypes
+```
+
+##  mRNA Data
+
+Import the mRNA expression from the discovery samples with the `data.table::fread` function, which is quicker for very large data sets such as this. The first row in the text file contains the sample ID and is not read by `fread` because the first column of the text file is a probe ID that is not indicated as such in the first row. 
+
+```{r}
+library(data.table)
+rna0 <- fread(file = file.path(discdir, "discovery_ExpressionMatrix.txt"))
+```
+
+We remedy this situation and relabel the `data.table` object's first column as probe IDs and the rest of the columns are labeled with sample IDs.
+
+```{r}
+tmp <- readLines(file.path(discdir, "discovery_ExpressionMatrix.txt"), n = 2)
+rna0_sample_ids <- unlist(strsplit(x = tmp[1], split = "\t"))
+row2 <- unlist(strsplit(x = tmp[2], split = "\t"))
+#head(rna0[1,])
+#head(row2)
+colnames(rna0) <- c("PROBE_ID", rna0_sample_ids)
+```
+
+Reformat the mRNA data as a matrix with probe IDs as row names and column names as sample IDs. 
+
+```{r}
+rna1 <- as.matrix(rna0[,2:ncol(rna0)])
+rownames(rna1) <- rna0[,PROBE_ID]
+#no missing values
+stopifnot(!any(is.na(rna1)))
+#no negative expression values
+stopifnot(!any(rna1 < 0))
+str(rna1)
+```
+
+Remove the large mRNA `data.table` object from the R sessions's workspace. 
+
+```{r}
+rm(rna0)
+```
+
+### Filter out poor quality probes
+
+Define a function to extract specific annotation attributes of RNA features from the "illuminaHumanv3.db"  database. 
+
+```{r}
+suppressPackageStartupMessages(library(illuminaHumanv3.db))
+#illuminaHumanv3listNewMappings()
+#?illuminaHumanv3listNewMappings
+hs_feature_list <- function(db, eg) { 
+  mk <- mappedkeys(db)
+  xx <- as.list(db[eg[eg %in% mk]])
+}
+```
+
+Extract the probe quality labels and inspect their distribution.
+
+```{r}
+pq <- unlist(hs_feature_list(illuminaHumanv3PROBEQUALITY, rownames(rna1)))
+table(pq)
+```
+
+Only keep those probes that have good or perfect quality. 
+
+```{r}
+suff_quality_index <- !(pq %in% c("Bad", "No match"))
+rna2 <- rna1[suff_quality_index,]
+#rm(rna1)
+```
+
+### Filter out all but highly variable probes
+
+Partition the samples by breast cancer subtype and then apply a dispersion filter to identify the top 7% highly variable genes according to median absolute deviation (MAD). Report the gene sets for each subtype. 
+
+```{r}
+get_filtered_rna_subtype_index <- function(subtype, prob_thresh = 0.93) {
+  same_sample_order_index <- match(sampleNames(cna_subtypes[[subtype]]), colnames(rna2))
+  #assure that every sample maps from CNA to RNA
+  stopifnot(!any(is.na(same_sample_order_index)))
+  #filter by subtype
+  rna_subtype <- rna2[,same_sample_order_index]
+  #median absolute deviation filter
+  madhat_rna_subtype <- apply(X = rna_subtype, MARGIN = 1, FUN = mad)
+  madhat_thresh <- quantile(x = madhat_rna_subtype, probs =prob_thresh)
+  keep_mad_index <- which(madhat_rna_subtype > madhat_thresh)
+  rownames(rna_subtype)[keep_mad_index]
+}
+rfi <- lapply(subtypes, get_filtered_rna_subtype_index, prob_thresh = 0.93)
+names(rfi) <- subtypes
+```
+
+### Overlap of probes between subtypes
+
+Each gene set has `r length(rfi[[1]])` genes. We verify that the pair-wise intersection of each subtype gene set exceeds 60%. 
+
+```{r}
+intersected_rfi <- Reduce(intersect, rfi)
+pwm <- combn(x = 1:5, 2)
+pwi <- lapply(1:ncol(pwm), function(j) Reduce(intersect, rfi[pwm[,j]]))
+pwn <- sapply(1:ncol(pwm), function(j) paste(subtypes[pwm[1,j]], subtypes[pwm[2,j]], sep = "-"))
+pwp <- sapply(pwi, length) / length(rfi[[1]])
+names(pwp) <- pwn
+pwp
+```
+
+Since there is sufficient pair-wise overlap we move forward with each subtype with a separate CNA-RNA network. Below we note the intersection of all these subtype gene sets is relatively small. 
+
+```{r}
+intersected_rfi <- Reduce(intersect, rfi)
+length(intersected_rfi)/length(rfi[[1]])
+```
+
+### Gene locations
+
+Prepare the annotation of RNA features to be compatible with spaceMap's workflow. 
+Next we use the full re-annotation of the mRNA features, which is consistent with the details of the Curtis et. al (2012) supplement. 
+
+```{r}
+suppressPackageStartupMessages(library(DBI))
+rna_reannot0 <- illuminaHumanv3fullReannotation()
+uprobes <- Reduce(union, rfi)
+rna_reannot <- rna_reannot0[rna_reannot0$IlluminaID %in% uprobes,]
+rna_reannot <- rna_reannot[match(uprobes, rna_reannot$IlluminaID),]
+stopifnot(identical(rna_reannot$IlluminaID, uprobes))
+rna_loc_multi <- strsplit(x =rna_reannot$GenomicLocation, split = ",")
+single_loc_index <- sapply(rna_loc_multi, length) == 1
+rna_loc_single <- rna_loc_multi[single_loc_index]
+multi_loc_index <- sapply(rna_loc_multi, length) > 1
+rna_loc_multi2 <- rna_loc_multi[multi_loc_index]
+rna_loc_multi3 <- lapply(rna_loc_multi2, function(x) x[1])
+rna_loc_multi4 <- lapply(rna_loc_multi2, function(x) x[2])
+
+single_loc <- function(sloc) { 
+  sloc2 <-  lapply(sloc, function(x) { 
+    unlist(strsplit(x, split = ":"))
+  })
+  #which have less than 4 attributes 
+  misinfo <- which(sapply(sloc2, length) < 4)
+  #assure those missing any of the four attributes miss them all
+  #this keeps the next function simple
+  stopifnot(all(is.na(sloc2[misinfo])))
+  as.data.frame(data.table::rbindlist(
+    lapply(sloc2, 
+           function(x) 
+             if (all(is.na(x))) { 
+               data.frame(chr = NA, start = NA, end = NA, strand = NA) 
+             } else { 
+               data.frame(chr = x[1], start = x[2],
+                          end = x[3], strand = x[4], 
+                          stringsAsFactors = FALSE)
+             }
+    ))) 
+}
+
+#undebug(single_loc)
+rna_loc1 <- single_loc(rna_loc_single)
+rna_loc2 <- single_loc(rna_loc_multi3)
+io <- c(which(single_loc_index), which(multi_loc_index))
+rna_reannot$chr[io] <- c(rna_loc1$chr, rna_loc2$chr)
+rna_reannot$start[io] <- c(rna_loc1$start, rna_loc2$start)
+rna_reannot$end[io] <- c(rna_loc1$end, rna_loc2$end)
+rna_reannot$strand[io] <- c(rna_loc1$strand, rna_loc2$strand)
+#View(rna_reannot)
+#View(rna_reannot[,c("GenomicLocation","chr", "start", "end", "strand")])
+```
+
+Reformat the list into a data.frame that can be stored in an `Biobase::ExpressionSet` object. 
+
+```{r}
+df <- rna_reannot
+df$type <- "y"
+names(df)[names(df)=="IlluminaID"] <- "id"
+names(df)[names(df)=="SymbolReannotated"] <- "alias"
+required_attr <- match(c("id", "alias","chr", "start", "end",  "strand", "type") , 
+                       names(df))
+rna_node_attributes <- df[,c(required_attr, setdiff(1:ncol(df), required_attr))]
+rownames(rna_node_attributes) <- rna_node_attributes$id
+```
+
+### mRNA ExpressionSet by subtype
+
+Create the final mRNA `ExpressionSet` object for each subtype. Create a standardized version and a non-standardized version. 
+
+```{r}
+get_rnaset_by_subtype <- function(subtype) { 
+  ###############
+  #EXPRESSION DATA
+  same_sample_order_index <- match(sampleNames(cna_subtypes[[subtype]]), colnames(rna2))
+  #assure that every sample maps from CNA to RNA
+  stopifnot(!any(is.na(same_sample_order_index)))
+  #filter by subtype
+  rna_subtype <- rna2[,same_sample_order_index]
+  #and by top genes in the subtype
+  rna_subtype <- rna_subtype[rfi[[subtype]],]
+  #assure that the column order does match
+  stopifnot(identical(colnames(rna_subtype), 
+                      sampleNames(cna_subtypes[[subtype]])))
+  #assure that the column order does match
+  stopifnot(identical(colnames(rna_subtype), 
+                      sampleNames(cna_subtypes[[subtype]])))
+  ##############
+  #FEATURE DATA
+  attr_idx <- match(rfi[[subtype]], rna_node_attributes$id)
+  #should be no missing
+  stopifnot(all(!is.na(attr_idx)))
+  fst <- rna_node_attributes[attr_idx,]
+  #assure that the rna attributes match 
+  #the row names of the rna expression matrix
+  stopifnot(identical(rownames(rna_subtype),
+                      rownames(fst)))
+  #EXPRESSION SET
+  #no standardized data
+  rnaset <- ExpressionSet(assayData = rna_subtype, 
+                          phenoData = phenoData(cna_subtypes[[subtype]]),
+                          featureData =  AnnotatedDataFrame(data = fst))
+  saveRDS(object = rnaset, 
+          file = file.path(filterdir, paste0("disc-mrna-eset-nostd-", subtype,  ".rds")))
+  #standardized data
+  #Make the RNA expression matrix to have mean zero and standard deviation 1. 
+  rna_subtype <- t(scale(t(rna_subtype)))
+  rnaset <- ExpressionSet(assayData = rna_subtype, 
+                          phenoData = phenoData(cna_subtypes[[subtype]]),
+                          featureData =  AnnotatedDataFrame(data = fst))
+  saveRDS(object = rnaset, 
+          file = file.path(filterdir, paste0("disc-mrna-eset-", subtype,  ".rds")))
+  rnaset
+}
+rnaset_subtypes <- lapply(subtypes, get_rnaset_by_subtype)
+names(rnaset_subtypes) <- subtypes
+```
+
+## Outlier Analysis
+
+[Filzmoser et al.](http://dx.doi.org/10.1016/j.csda.2007.05.018) introduced a method called `PCOut` for outlier detection in high dimension that is computationally fast. It is implemented in the CRAN package [mvoutlier](https://github.com/cran/mvoutlier/blob/master/R/pcout.R) and leverages a semi-robust principal component decomposition to identify outliers of two types: those samples that differ in their location parameter from the rest of the samples and those that differ in their scatter (scale). We applied `PCout` for each subtype.
+
+The wrapper function `outlier_analysis` performs outlier analysis for each subtype on the standardized data.
+
+```{r}
+suppressPackageStartupMessages(library(mvoutlier))
+suppressPackageStartupMessages(library(Biobase))
+subtypes <- c("LumA", "LumB", "Basal", "Her2", "Normal")
+outlier_analysis <- function(subtype, dtype) { 
+  eset <- readRDS(file = file.path(paste0("~/scratch-data/neta-metabric/disc-filtered/disc-", 
+                                          dtype,"-eset-", subtype, ".rds")))
+  expression <- t(exprs(eset))
+  pco <- pcout(x = expression)
+  pco
+}
+```
+
+Identify outlying values for both mRNA and CNA data. 
+
+```{r}
+moa <- lapply(subtypes, outlier_analysis, dtype = "mrna")
+coa <- lapply(subtypes, outlier_analysis, dtype = "cna")
+```
+
+Visualize the outliers for each subtype and report the ratio of potential outliers to total samples. 
+
+```{r, fig.show='hold'}
+library(ggplot2)
+plot_outliers <- function(pco) { 
+  ggdat <- data.frame(outlier = ifelse(pco$wfinal01 == 0, "outlier", "non-outlier"),
+                      loc = pco$x.dist1,
+                      scat = pco$x.dist2
+                      )
+  ggplot(data = ggdat, aes(x = loc, y = scat, colour = outlier)) + 
+    geom_point() + theme_bw() + 
+    xlab("Location Distance") + ylab("Scatter Distance")
+}
+
+oa_fig <- function(o, loa) { 
+  plot_outliers(loa[[o]]) + 
+    ggtitle(paste0(subtypes[o], ": ", 
+                   sum(loa[[o]]$wfinal01 == 0), " / ", 
+                   length(loa[[o]]$wfinal01)))
+}
+```
+
+### mRNA-based outlier samples 
+
+```{r}
+moaf <- lapply(seq_along(moa), oa_fig, loa = moa)
+suppressPackageStartupMessages(library(gridExtra))
+do.call("grid.arrange", c(moaf, ncol=2))
+```
+
+### CNA-based outlier samples 
+
+
+```{r}
+coaf <- lapply(seq_along(coa), oa_fig, loa = coa)
+do.call("grid.arrange", c(coaf, ncol=2))
+```
+
+### Remove the most extreme outliers
+
+Identify the extreme outliers by sample names for both mRNA and CNA data types under each breast cancer subtype. The location distance ought to be sufficient to identify the most extreme outliers using thresholds for each subtype.  Not all samples labeled as "outlier" in the previous plot will be removed. 
+
+```{r}
+names(moa) <- subtypes
+names(coa) <- subtypes
+outlier_by_loc <- function(loa, subtype, thresh_loc) { 
+  ids_sorted <- sort(loa[[subtype]]$x.dist1, 
+                     index.return = T, decreasing = T)
+  out_ids <- names(ids_sorted$x[ids_sorted$x > thresh_loc])
+}
+#thresholds
+mrna_thresh_locs <- c(27, 25, 18, 20, 20)
+cna_thresh_locs <- c(82, 60, 25, 30, 250)
+mrna_outlier_ids <- lapply(seq_along(subtypes), 
+                           function(i) outlier_by_loc(loa = moa, 
+                                                      subtypes[i],
+                                                      mrna_thresh_locs[i]))
+names(mrna_outlier_ids) <- subtypes
+cna_outlier_ids <- lapply(seq_along(subtypes), 
+                          function(i) outlier_by_loc(loa = coa, 
+                                                     subtypes[i], 
+                                                     cna_thresh_locs[i]))
+names(cna_outlier_ids) <- subtypes
+names(mrna_outlier_ids) <- subtypes
+saveRDS(object = mrna_outlier_ids, 
+        file = "~/scratch-data/neta-metabric/disc-filtered/mrna_outlier_ids.rds")
+saveRDS(object = cna_outlier_ids, 
+        file = "~/scratch-data/neta-metabric/disc-filtered/cna_outlier_ids.rds")
+union_outliers_ids <- lapply(seq_along(moa), 
+                             function(i) union(mrna_outlier_ids[[i]], cna_outlier_ids[[i]]))
+names(union_outliers_ids) <- subtypes
+overlap_outliers_ids <- lapply(seq_along(moa), 
+                               function(i) intersect(mrna_outlier_ids[[i]], cna_outlier_ids[[i]]))
+names(overlap_outliers_ids) <- subtypes
+```
+
+Take the union of the outliers and report their number for each subtype. 
+
+```{r}
+sapply(union_outliers_ids, length)
+```
+
+There is no overlap between mRNA and CNA data types in terms of outliers. 
+
+```{r}
+sapply(overlap_outliers_ids, length)
+```
+
+We decided to remove the most extreme outliers in both mRNA and CNA data types for each breast cancer subtype. We save the ExpressionSets after dropping out the extreme outliers.
+
+```{r}
+filterdir <- "~/scratch-data/neta-metabric/disc-filtered/"
+make_eset_without_outliers <-  function(subtype, dtype) { 
+  f <- list.files(path = filterdir, 
+                  full.names = T, pattern = paste0(dtype, "-eset-nostd-", subtype))
+  stopifnot(nchar(f) > 0)
+  eset <- readRDS(file = f)
+  out_idx <- which(sampleNames(eset) %in% union_outliers_ids[[subtype]])
+  eset_no_out <- eset[,-out_idx]
+  upf <- sub(pattern = subtype, 
+             replacement = paste0("union-dropout-nostd-", subtype), x = f, fixed = T)
+  saveRDS(eset_no_out, file = upf)
+  exprs(eset_no_out) <- t(scale(t(exprs(eset_no_out))))
+  upf2 <- sub(pattern = subtype, 
+              replacement = paste0("union-dropout-std-", subtype), x = f, fixed = T)
+  saveRDS(eset_no_out, file = upf2)
+  eset_no_out
+}
+rnaset_subtypes <- sapply(subtypes, make_eset_without_outliers, dtype = "mrna")
+cnaset_subtypes <- sapply(subtypes, make_eset_without_outliers, dtype = "cna")
+```
+
+### Highly Correlated Probes
+
+Identify the number of highly correlated probes (pairwise correlation exceeding 0.999) for each subtype and report how many highly correlated probes come from the same gene. 
+
+```{r}
+hc_probes <- function(subtype, thresh =  0.999) { 
+  eset <- readRDS(file = file.path(filterdir, 
+                                   paste0("disc-mrna-eset-nostd-union-dropout-std-",
+                                          subtype, ".rds")))
+  expression <- t(exprs(eset))
+  coro <- cor(x = expression)
+  p <- nrow(coro)
+  pcoro <- list()
+  cntr <- 1
+  for(i in 1:(p - 1)) {
+    for(j in (i + 1):p) {
+      if(coro[i,j] > thresh) { 
+        pcoro[[cntr]] <- c(i,j)
+        cntr <- cntr + 1
+      }  
+        
+    }
+  }
+
+  fd <- featureData(eset)
+  fd <- fd@data
+  alias <- fd$alias
+  id <- fd$id
+  if (length(pcoro) > 0 ) { 
+    dup <- sapply(pcoro, function(pc) anyDuplicated(alias[pc]) > 0)
+    if (sum(dup) > 0 ) { 
+      dalias <- sapply(pcoro[dup], function(pc) alias[pc[1]])  
+    } else { 
+      dalias <- NA  
+    }
+  } else { 
+    dup <- vector()
+    dalias <- NA
+  }
+  
+list(subtype = subtype, 
+       hcp = pcoro, 
+       ndup = sum(dup), 
+       nhcp = length(dup), 
+       alias = dalias)
+}
+hc_probe_by_subtype <- lapply(subtypes, hc_probes, thresh = 0.999)
+names(hc_probe_by_subtype) <- subtypes
+```
+
+Tabulate the highly correlated probes by subtype. 
+
+```{r, results = 'asis'}
+lhc <- lapply(hc_probe_by_subtype, function(x) data.frame(ndup = x$ndup, nhcp = x$nhcp))
+dhc <- do.call("rbind", lhc)
+names(dhc) <- c("No. Mapping to Same Gene", "No. of Highly Correlated Probe Pairs")
+library(knitr)
+kable(dhc[,2:1])
+```
+
+There are no highly correlated probes at this extreme threshold. This is a good sign that the similar probes do not suffer from extreme cases of cross-hybridization.  
+
+
+The mRNA Expression sets to use in model tuning are: 
+
+```{r}
+list.files(path = filterdir, pattern = "disc-mrna-eset-nostd-union-dropout-std-")
+```
+
+
+### Highly Correlated CNA
+
+Use the same [density-based scan clustering algorithm](https://rdrr.io/cran/fpc/man/dbscan.html) as was done in the network analysis of [BCPLS](https://topherconley.github.io/neta-bcpls/data.html) to find ultra-correlated CNA. In this analysis (although not shown) 
+the LumA has no ultra-correlated CNA and Normal has the most ultra-correlated CNA pairs.We assured that the ultra-correlated CNA pairs were within 4 Mb for the Normal-like data set and the rest of the subtypes' ultra-correlated CNA pairs were within .5 MB of each other. This reflects the spatial correlation of these features.  If there is a group of ultra-correlated CNA features, we take just one of the features and drop the other features in the group from the data set. However,  we make a note the dropped CNA features through the `clustered_with` attribute of the CNA feature that was kept in the CNA ExpressionSets. 
+
+```{r}
+hc_cna <- function(subtype) {
+  eset <- readRDS(file = file.path(filterdir, 
+                                   paste0("disc-cna-eset-nostd-union-dropout-nostd-", 
+                                          subtype, ".rds")))
+  X <- t(exprs(eset))
+  library(fpc)
+  dR <- 1 - abs(cor(X))
+  clout <- fpc::dbscan(data = dR, MinPts = 2, eps = 1e-3, method = "dist")
+  
+  suppressWarnings(library(stringdist))
+  library(foreach)
+  clusterDistr <- as.data.frame(table(clout$cluster), stringAsFactors = FALSE)
+  #Cluster `0` corresponds to sufficiently independent CNA's.
+  #Omit it from the multi-colinear analysis.
+  if(nrow(clusterDistr) == 1) { 
+    #nothing clustered
+    exprs(eset) <- t(scale(t(exprs(eset))))
+    saveRDS(object = eset, 
+            file = file.path(filterdir, 
+                             paste0("disc-cna-eset-nostd-union-dropout-multi-std", 
+                                    subtype, ".rds")))
+    return(eset)
+  }
+  mcolinear <- clusterDistr$Var1[2:nrow(clusterDistr)]
+  
+  namesMultiCol <- foreach(i = seq_along(mcolinear)) %do% {
+    colnames(X[,clout$cluster == mcolinear[i]])
+  }
+  
+  #assure that those being collapsed are within 4Mb of each other
+  #note: all subtypes, except Normal-Like collapse features 
+  #that are within .5 Mb of each other.
+  toResolve <- namesMultiCol
+  simdist <- function(x) { 
+    coords <- pData(featureData(eset[x,]))
+    last <- nrow(coords)
+    if(coords$chr[1] != coords$chr[last]) { 
+      FALSE
+    } else { 
+      (coords$start[last] - coords$end[1]) < 4e6  
+    }
+  }
+  stopifnot(all(sapply(toResolve, simdist)))
+  
+  keep <- sapply(toResolve, function(x) x[1])
+  as_clustered <- sapply(toResolve, function(x) x[2:length(x)])
+  drop_clustered <- unlist(as_clustered)
+  eset2 <- eset[!(featureNames(eset) %in% drop_clustered),]
+  fd2 <- pData(featureData(eset2))
+  fd2$clustered_with <- NA
+  fd2$clustered_with[fd2$id %in% keep] <- sapply(as_clustered, 
+                                                 function(x)
+                                                   paste0(x, collapse = "; "))
+  eset2@featureData <- AnnotatedDataFrame(fd2)
+  #standardize after subtype -> no outliers -> no multi
+  exprs(eset2) <- t(scale(t(exprs(eset2))))
+  saveRDS(object = eset2, 
+          file = file.path(filterdir, 
+                           paste0("disc-cna-eset-nostd-union-dropout-multi-std-",
+                                  subtype, ".rds")))
+  eset2
+}
+esets <- sapply(subtypes, hc_cna)
+```
+
+
+The CNA Expression sets to use in model tuning are: 
+
+```{r}
+list.files(path = filterdir, pattern = "disc-cna-eset-nostd-union-dropout-multi-std")
+```
+
+
+## Cross Validation Folds
+
+Partition samples of each subtype into mutually exclusive test sets. We do not balance the samples of the test sets with any clinical covariate. 
+
+```{r}
+set.seed(153135)
+get_cvfold_subtypes <- function(subtype, k = 10) { 
+  #install.packages("caret", dependencies = T)
+  suppressPackageStartupMessages(library(caret))
+  rnaset <- rnaset_subtypes[[subtype]]
+  N <- ncol(rnaset)
+  #dummy class
+  dummy_class <- sample(x = c("A","B"), size = N, replace = TRUE)
+  test_set <- createFolds(y = dummy_class, k = k)
+  test_set_len <- sapply(test_set, length)
+  train_set <- lapply(test_set, function(fold) setdiff(1:N, fold))
+  train_set_len <- sapply(train_set, length)
+  #assert no overlap
+  stopifnot(length(intersect(train_set$Fold01, test_set$Fold01)) == 0)
+  saveRDS(object = test_set, 
+          file = file.path(filterdir, paste0("discovery_test_sets_dropout", 
+                                             subtype, ".rds")))
+  saveRDS(object = train_set, 
+          file = file.path(filterdir, paste0("discovery_train_sets_dropout", 
+                                             subtype, ".rds")))
+  list(test = test_set, train = train_set)
+}
+cvfolds <- lapply(subtypes, get_cvfold_subtypes)
+```
+
+## Session Info
+
+```{r}
+sessionInfo()
+```
+

@@ -1,0 +1,29 @@
+name: "neta-metabric"
+output_dir: "docs"
+exclude: ["README.md", "basal-disc/"]
+navbar:
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "Discovery Data Set"
+      menu:
+        - text: "1. Data"
+          href: disc-data-by-subtype.html
+        - text: "2. CV Vote"
+          menu: 
+            - text: Basal
+            - href: bas-cv.html
+            - text: Her2
+            - href: her2-cv.html
+    - text: "METABRIC Code"
+      icon: fa-github
+      href: https://github.com/topherconley/neta-metabric
+    - text: "spacemap"
+      href: https://topherconley.github.io/spacemap/
+output:
+  html_document:
+    theme: united
+    include:
+      after_body: footer.html
+    
+ 
