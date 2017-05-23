@@ -31,4 +31,4 @@ hostname
 
 # Execute each of the jobs with a different index (the R script will then process
 # this to do something different for each index):
-/usr/bin/R --no-save --no-restore --no-site-file --no-init-file --args 31 < /home/cconley/repos/neta-metabric/her2-disc/01-her2-cvvote-space.R
+/usr/bin/R --no-save --no-restore --no-site-file --no-init-file --args 10 < /home/cconley/repos/neta-metabric/her2-disc/01-her2-cvvote-space.R

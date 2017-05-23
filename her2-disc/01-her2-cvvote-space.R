@@ -84,8 +84,8 @@ tmap <- expand.grid(lam1 = sqrt(seq(55^2, 100^2, length = 40)))
 
 #result directory
 respath <- "/home/cconley/scratch-data/neta-metabric/disc-cv-vote/her2/01/"
-
-tictoc <- system.time({cvsmap <- cvVote(Y = Y,
+library(spacemap)
+tictoc <- system.time({cvsmap <- spacemap::cvVote(Y = Y,
                                         trainIds = trainSets, testIds = testSets, 
                                         method = "space", tuneGrid = tmap, 
                                         resPath = respath,
