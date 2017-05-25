@@ -45,7 +45,7 @@ if (comp == "gauss") {
 ##################
 #     Data       #
 ##################
-filterdir <- "/home/cconley/scratch-data/neta-metabric/disc-filtered/"
+filterdir <- "~/scratch-data/neta-metabric/disc-filtered/"
 fy <- "disc-mrna-eset-nostd-union-dropout-std-Her2.rds"
 fx <- "disc-cna-eset-nostd-union-dropout-multi-std-Her2.rds"
 library(Biobase)
@@ -60,7 +60,7 @@ stopifnot(all(sampleNames(xset) == sampleNames(yset)))
 #   INIT FIT     #
 ##################
 N <- nrow(Y)
-Q <- ncol(Y)
+Q <- ncol(Y) + ncol(X)
 lam1start <- function(n, q, alpha) { 
   sqrt(n) * qnorm(1 - (alpha/ (2*q^2)))
 }
@@ -80,15 +80,15 @@ testSets <- readRDS(file.path(filterdir, "discovery_test_sets_dropoutHer2.rds"))
 ##################
 
 #GRID
-tmap <- expand.grid(lam1 = sqrt(seq(55^2, 100^2, length = 40)))
+tmap <- expand.grid(lam1 = sqrt(seq(55^2, 110^2, length = 60)))
 
 #result directory
-respath <- "/home/cconley/scratch-data/neta-metabric/disc-cv-vote/her2/01/"
+respath <- "/home/cconley/scratch-data/neta-metabric/disc-cv-vote/her2/02/"
 library(spacemap)
-tictoc <- system.time({cvsmap <- spacemap::cvVote(Y = Y,
+tictoc <- system.time({cvsmap <- spacemap::cvVote(Y = Y, X = X,
                                         trainIds = trainSets, testIds = testSets, 
                                         method = "space", tuneGrid = tmap, 
                                         resPath = respath,
                                         tol = 1e-4, cdmax = 6e7)})
-save.image(file = file.path(respath, "her2-01.rda"))
+save.image(file = file.path(respath, "her2-02.rda"))
 stopCluster(cl)
