@@ -133,3 +133,4 @@ tictoc <- system.time({cvsmap <- cvVote(Y = Y, X = X,
                                         tol = 1e-4, cdmax = 6e7)})
 
 save.image(file = file.path(respath, "basal-02.rda"))
+stopCluster(cl)
