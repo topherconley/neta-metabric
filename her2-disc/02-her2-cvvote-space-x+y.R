@@ -89,6 +89,6 @@ tictoc <- system.time({cvsmap <- spacemap::cvVote(Y = Y, X = X,
                                         trainIds = trainSets, testIds = testSets, 
                                         method = "space", tuneGrid = tmap, 
                                         resPath = respath,
-                                        tol = 1e-4, cdmax = 6e7)})
+                                        tol = 1e-4, cdmax = 15e7)})
 save.image(file = file.path(respath, "her2-02.rda"))
 stopCluster(cl)

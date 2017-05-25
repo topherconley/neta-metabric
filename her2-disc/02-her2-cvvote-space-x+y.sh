@@ -8,7 +8,7 @@
 # Name of the job - you'll probably want to customize this.
 #SBATCH --job-name=her2-02
 # Tell Gauss how much memory per CPU your job will use:
-#SBATCH --mem=12120
+#SBATCH --mem=20120
 
 # Standard out and Standard Error output files with the job number in the name.
 #SBATCH -o /home/cconley/scratch-data/neta-metabric/disc-cv-vote/her2/02/log.out
