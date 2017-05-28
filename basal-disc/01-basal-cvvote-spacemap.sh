@@ -11,8 +11,8 @@
 #SBATCH --mem=15120
 
 # Standard out and Standard Error output files with the job number in the name.
-#SBATCH -o /home/cconley/scratch-data/neta-metabric/disc-cv-vote/basal/02/log2.out
-#SBATCH -e /home/cconley/scratch-data/neta-metabric/disc-cv-vote/basal/02/log2.err
+#SBATCH -o /home/cconley/scratch-data/neta-metabric/disc-cv-vote/basal/01/log.out
+#SBATCH -e /home/cconley/scratch-data/neta-metabric/disc-cv-vote/basal/01/log.err
 
 #SBATCH --nodes=5
 #SBATCH --ntasks-per-node=15

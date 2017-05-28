@@ -96,41 +96,17 @@ testSets <- readRDS(file.path(filterdir, "discovery_test_sets_dropoutBasal.rds")
 ##################
 
 #GRID
-# tmap <- expand.grid(lam1 = seq(70, 85, length = 5), 
-#                     lam2 = seq(25, 33, length = 5), 
-#                     lam3 = seq(10, 70, length = 5))
+tmap <- expand.grid(lam1 = seq(70, 85, length = 5),
+                    lam2 = seq(25, 33, length = 5),
+                    lam3 = seq(10, 70, length = 5))
 #result directory
-# respath <- "/home/cconley/scratch-data/neta-metabric/disc-cv-vote/basal/01/"
-# library(spacemap)
-# tictoc <- system.time({cvsmap <- cvVote(Y = Y, X = X, 
-#                                         trainIds = trainSets, testIds = testSets, 
-#                                         method = "spacemap", tuneGrid = tmap, 
-#                                         resPath = respath,
-#                                        tol = 1e-4, cdmax = 6e7)})
-#save.image(file = file.path(respath, "basal-01.rda"))
-
-##################
-#   TRY O2       #
-##################
-
-#GRID
-tmap <- rbind(expand.grid(lam1 = c(67, 68, 69, 71, 72),
-                          lam2 = seq(25.5, 27.5, length = 5), 
-                          lam3 = seq(0, 20, length= 5)),
-              expand.grid(lam1 =  c(67, 68, 69, 71, 72),
-                          lam2 = seq(20, 23, length = 3), 
-                          lam3 = seq(35, 80, length= 5)))
-#do most intensive computations first
-tmap <- tmap[with(data = tmap, order(lam1, lam2, lam3)),]
-#result directory
-respath <- "/home/cconley/scratch-data/neta-metabric/disc-cv-vote/basal/02/"
-
+respath <- "/home/cconley/scratch-data/neta-metabric/disc-cv-vote/basal/01/"
 library(spacemap)
-tictoc <- system.time({cvsmap <- cvVote(Y = Y, X = X, 
-                                        trainIds = trainSets, testIds = testSets, 
-                                        method = "spacemap", tuneGrid = tmap, 
+tictoc <- system.time({cvsmap <- cvVote(Y = Y, X = X,
+                                        trainIds = trainSets, testIds = testSets,
+                                        method = "spacemap", tuneGrid = tmap,
                                         resPath = respath,
-                                        tol = 1e-4, cdmax = 6e7)})
+                                       tol = 1e-4, cdmax = 6e7)})
+save.image(file = file.path(respath, "basal-01.rda"))
 
-save.image(file = file.path(respath, "basal-02.rda"))
 stopCluster(cl)
