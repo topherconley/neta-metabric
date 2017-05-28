@@ -11,11 +11,11 @@
 #SBATCH --mem=30120
 
 # Standard out and Standard Error output files with the job number in the name.
-#SBATCH -o /home/cconley/scratch-data/neta-metabric/disc-cv-vote/lumb/01/log.out
-#SBATCH -e /home/cconley/scratch-data/neta-metabric/disc-cv-vote/lumb/01/log.err
+#SBATCH -o /home/cconley/scratch-data/neta-metabric/disc-cv-vote/lumb/01/loga.out
+#SBATCH -e /home/cconley/scratch-data/neta-metabric/disc-cv-vote/lumb/01/loga.err
 
-#SBATCH --nodes=8
-#SBATCH --ntasks-per-node=15
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=31
 
 #Project Directory
 #SBATCH -D /home/cconley/repos/neta-metabric/
@@ -31,4 +31,4 @@ hostname
 
 # Execute each of the jobs with a different index (the R script will then process
 # this to do something different for each index):
-/usr/bin/R --no-save --no-restore --no-site-file --no-init-file --args 15 < /home/cconley/repos/neta-metabric/lumB-disc/01-lumb-cvvote-spacemap.R
+/usr/bin/R --no-save --no-restore --no-site-file --no-init-file --args 31 < /home/cconley/repos/neta-metabric/lumb-disc/01-lumb-cvvote-spacemap.R

@@ -76,11 +76,15 @@ tmap <- expand.grid(lam1 = seq(125, 160, length = 5),
                     lam2 = seq(75, 100, length = 5), 
                     lam3 = seq(0, 100, length = 5))
 
+tmap <- expand.grid(lam1 = 143,
+                    lam2 = seq(40, 70, length = 15), 
+                    lam3 = seq(0, 100, length = 8))
+
 library(spacemap)
 tictoc <- system.time({ntmap1 <- initFit(Y = Ytrain, X = Xtrain, method = "spacemap", tuneGrid = tmap,
                                          iscale = FALSE, tol = 1e-3, cdmax = 10e7)})
 respath <- "/home/cconley/scratch-data/neta-metabric/disc-cv-vote/lumb/01/"
-save.image(file = file.path(respath, "lumb-01.rda"))
+save.image(file = file.path(respath, "lumb-01a.rda"))
 stopCluster(cl)
 
 
