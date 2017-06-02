@@ -8,13 +8,13 @@
 # Name of the job - you'll probably want to customize this.
 #SBATCH --job-name=basal-04
 # Tell Gauss how much memory per CPU your job will use:
-#SBATCH --mem=45120
+#SBATCH --mem=40120
 
 # Standard out and Standard Error output files with the job number in the name.
 #SBATCH -o /home/cconley/scratch-data/neta-metabric/disc-cv-vote/basal/04/log.out
 #SBATCH -e /home/cconley/scratch-data/neta-metabric/disc-cv-vote/basal/04/log.err
 
-#SBATCH --nodes=4
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=31
 
 #Project Directory

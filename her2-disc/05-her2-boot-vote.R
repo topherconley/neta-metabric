@@ -70,20 +70,27 @@ tune
 #    ENSEMBLE    #
 ##################
 
+#result directory
+respath <- "/home/cconley/scratch-data/neta-metabric/disc-cv-vote/her2/05/"
+
 library(spacemap)
 seed <- 971500
 tictoc <- system.time({ens <- spacemap::bootEnsemble(Y = Y, X = X, tune = tune,
-                                                     method = "spacemap", 
-                                                     seed = seed,
-                                                     tol = 1e-4, cdmax = 30e7)})
+                                                     method = "spacemap", B = 250,
+						     resPath = respath,
+                                                     seed = seed, p0 = 0.90,
+                                                     tol = 1e-4, cdmax = 60e7)})
+save.image(file = file.path(respath, "her2-05.rda"))
+#stop cluster to not run out of memory
+stopCluster(cl)
+#re-register the sequential backend
+registerDoSEQ()
+object.size(ens)
 bv <- bootVote(ens)
 
 ##################
 #  SAVE RESULTS  #
 ##################
 
-#result directory
-respath <- "/home/cconley/scratch-data/neta-metabric/disc-cv-vote/her2/05/"
 saveRDS(object = bv, file = file.path(respath, "her2-05-boot-vote.rds"))
 save.image(file = file.path(respath, "her2-05.rda"))
-stopCluster(cl)
