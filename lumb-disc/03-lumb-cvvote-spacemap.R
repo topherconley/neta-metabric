@@ -70,9 +70,9 @@ testSets <- readRDS(file.path(filterdir, "discovery_test_sets_dropoutLumB.rds"))
 ##################
 
 #GRID
-tmap2 <- expand.grid(lam1 = seq(110^2, 125^2, length = 5)^(1/2),
-                     lam2 = seq(25^2, 46^2, length = 5)^(1/2),
-                     lam3 = seq(3^(1/5), 50^(1/5), length = 5)^(5))
+tmap <- expand.grid(lam1 = seq(110^2, 125^2, length = 5)^(1/2),
+                    lam2 = seq(25^2, 46^2, length = 5)^(1/2),
+                    lam3 = seq(3^(1/5), 50^(1/5), length = 5)^(5))
 
 # plot(tmap$lam1, tmap$lam2, xlim  = c(110, 180), ylim  = c(20, 80))
 # points(tmap2$lam1, tmap2$lam2, pch = 19)
