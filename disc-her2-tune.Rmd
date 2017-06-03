@@ -1,0 +1,319 @@
+---
+title: "METABRIC Discovery Her2 Analysis"
+author: "Christopher Conley, Pei Wang, Umut Ozbek, Jie Peng"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r, echo = FALSE}
+library(knitr)
+opts_chunk$set(message=F, warning=F)
+```
+
+
+This document highlights model tuning with cross validation, comparisons of CV.Vote and Boot.Vote ensemble networks, and network analysis efforts on Her2 breast cancer samples. 
+
+## CV Vote Model Tuning 
+
+The following function helps consolidate the diagnostic information for different iterations of CV.
+
+```{r}
+source("dxCV.R")
+```
+
+### Tuning iteration 1
+
+We tuned SPACE on the mRNA data to narrow the neighborhood of `lam1`. Run the tuning diagnostics.
+
+```{r}
+dx1 <- dxspace(file = "~/scratch-data/neta-metabric/disc-cv-vote/her2/01/her2-01.rda", F)
+```
+
+We find a fairly stable CV-score curve in the upper-left corner that appears to be increasing to the left of `lam1=60`, but will require further exploration in follow-up tuning iterations.  The average number of y--y edges
+is about 5000 per training fold, which is not too high.
+
+### Tuning iteration 2
+
+We tuned SPACE jointly on (mRNA, DNA copy number alteration intervals) to see the effect on `lam1` when we include DNA features. 
+
+```{r}
+dx2 <- dxspace(file = "~/scratch-data/neta-metabric/disc-cv-vote/her2/02/her2-02.rda", F, c(0,0.5))
+```
+
+
+The upper-left plot shows a slightly less stable curve compared to strictly mRNA input. In this scenario, the CV-selected `lam1` is larger than before and the number of y--y edges is correspondingly smaller (see bottom-left plot). Also, we are reminded of the limited x--y edge power when fitting SPACE based on the bottom-right plot. 
+
+### Tuning iteration 3
+
+In this tuning iteration which involves spaceMap, we set the `lam1` parameter to be closer to that of iteration 2 in hopes that the y--y network leaves some degrees of freedom left over for learning x--y edges given the limited signal and limited sample size scenario. The initial selection of ranges for `lam2,lam3` was intended to sample across the model space as indicated by a broad range in the number of x--y edges.  The following plot shows the initial grid for `lam2, lam3`, where the upper-left block searches the space of fewer x-hubs with larger degree and the lower-right space searches the space of more x-hubs with relatively smaller degree. 
+
+```{r}
+i03 <- new.env()
+load("~/scratch-data/neta-metabric/disc-cv-vote/her2/03/her2-03.rda", envir = i03)
+tmap <- i03$tmap
+plot(tmap$lam2, tmap$lam3, ylab = "lam3", xlab = "lam2", pch = 19)
+```
+
+
+Note the following plot shows the CV scores profile for each tuning penalty of spaceMap. Also the plot zooms in on those CV-scores in the top 50% of all CV-scores; this means that certain tuning penalty combinations may have no CV-score depicted if the scores are particularly poor. 
+
+```{r}
+dx3 <- dxsmap(file = "~/scratch-data/neta-metabric/disc-cv-vote/her2/03/her2-03.rda", T, c(0,0.5))
+```
+
+Above, it is clear that the CV-selected `lam1` agrees with the first tuning iteration when just mRNA was input to SPACE. In the next iteration of tuning spaceMap, we will need to explore smaller values of `lam1`. 
+With respect to `lam2,lam3`, the CV-score profiles do not clarify a clear optimal value, even though these tuning parameters index models with wide ranging numbers on x--y edges. The following plot shows the effect of `lam2,lam3` on x--y edge number.  
+
+```{r}
+grid.arrange(dx3$v2[[4]],dx3$v3[[4]], ncol = 2)
+```
+
+
+From these diagnostics, we define the next tuning iteration of spaceMap that searches 
+
+### Tuning iteration 4
+
+
+```{r}
+i04 <- new.env()
+load("~/scratch-data/neta-metabric/disc-cv-vote/her2/04/her2-04.rda", envir = i04)
+tmap2 <- i04$tmap
+par(mfrow = c(1,2))
+plot(tmap$lam1, tmap$lam2, ylab = "lam2", xlab = "lam1", 
+     pch = 19, xlim = c(50,80), ylim = c(8,40))
+points(tmap2$lam1, tmap2$lam2, pch = 22)
+points(i03$cvsmap$minTune$lam1, i03$cvsmap$minTune$lam2, pch = "3", cex = 2)
+points(i04$cvsmap$minTune$lam1, i04$cvsmap$minTune$lam2, pch = "4", cex = 2)
+
+
+plot(tmap$lam2, tmap$lam3, ylab = "lam3", xlab = "lam2", 
+     pch = 19, xlim = c(8,35))
+points(tmap2$lam2, tmap2$lam3, pch = 22)
+points(i03$cvsmap$minTune$lam2, i03$cvsmap$minTune$lam3, pch = "3", cex = 2)
+points(i04$cvsmap$minTune$lam2, i04$cvsmap$minTune$lam3, pch = "4", cex = 2)
+```
+
+
+
+```{r}
+i04$cvsmap$minTune
+i04$tictoc/60^2
+dim(i04$tmap)
+```
+
+
+
+```{r}
+dx4 <- dxsmap(file = "~/scratch-data/neta-metabric/disc-cv-vote/her2/04/her2-04.rda")
+```
+
+
+
+```{r}
+i03$cvsmap$logcvScore
+i04$cvsmap$logcvScore
+```
+
+
+```{r}
+dx4$gcvdrop
+```
+
+```{r}
+dx4$gxhub
+```
+
+
+
+```{r}
+bv <- readRDS(file.path("~/scratch-data/neta-metabric/disc-cv-vote/her2/06/","her2-06-boot-vote.rds"))
+dbv <- data.frame(xy = nonZeroWhole(bv$bv$xy,0.0), 
+                  yy = nonZeroUpper(bv$bv$yy,0.0), 
+                  type = "Boot.Vote")
+dx4$gcvdrop + geom_point(data = dbv, size  = 2)
+```
+
+
+
+## Network Analysis
+
+```{r}
+library(Biobase)
+filterdir <- "~/scratch-data/neta-metabric/disc-filtered/"
+yinfo <- pData(featureData(readRDS(file = file.path(filterdir,"disc-mrna-eset-nostd-union-dropout-std-Her2.rds"))))
+xinfo <- pData(featureData(readRDS(file = file.path(filterdir,"disc-cna-eset-nostd-union-dropout-multi-std-Her2.rds"))))
+yinfo$start <- as.integer(yinfo$start)
+yinfo$end <- as.integer(yinfo$end)
+xinfo$start <- as.integer(xinfo$start)
+xinfo$end <- as.integer(xinfo$end)
+```
+
+### Collapse probes to gene level
+
+
+```{r}
+net <- bv$bv
+rownames(net$xy) <- xinfo$id; colnames(net$xy) <- yinfo$id;
+rownames(net$yy) <- yinfo$id; colnames(net$yy) <- yinfo$id;
+bdeg <- bv$bdeg
+colnames(bdeg$xy) <- xinfo$id; colnames(bdeg$yy) <- yinfo$id; 
+```
+
+
+```{r}
+egtab <- table(yinfo$EntrezReannotated)
+eg2probeid <- lapply(names(egtab), function(eg) {
+  yinfo$id[yinfo$EntrezReannotated %in% eg]  
+})
+#take union of edges between probes with same entrez gene id
+meg <- eg2probeid[sapply(eg2probeid, length) > 1]
+for(m in meg) { 
+  uyedge <- apply(X = net$yy[m,], MARGIN = 2, FUN = max)
+  uxedge <- apply(X = net$xy[,m], MARGIN = 1, FUN = max)
+  net$yy[m[1],] <- uyedge
+  net$xy[,m[1]] <- uxedge
+}
+#drop secondary listing of probes
+secprobes <- unlist(sapply(meg, function(m) m[2:length(m)]))
+keepers <- setdiff(rownames(net$yy), secprobes)
+net$yy <- net$yy[keepers,keepers]
+net$xy <- net$xy[,keepers]
+#adjust order of yinfo
+yinfo <- yinfo[match(keepers,yinfo$id),]
+bdeg$yy <- bdeg$yy[,keepers]
+```
+
+
+```{r}
+probe2eg <- yinfo[,c("id", "EntrezReannotated")]
+#all duplicates should be missing values now. 
+eg <- probe2eg$EntrezReannotated
+stopifnot(all(is.na(eg[which(duplicated(eg))])))
+#replace ID with entrez gene
+yinfo$probeid <- yinfo$id
+yinfo$id <- ifelse(is.na(eg), yinfo$id, eg)
+stopifnot(!anyDuplicated(yinfo$id))
+```
+
+
+```{r}
+rownames(net$xy) <- xinfo$id; colnames(net$xy) <- yinfo$id;
+rownames(net$yy) <- yinfo$id; colnames(net$yy) <- yinfo$id;
+colnames(bdeg$xy) <- xinfo$id; colnames(bdeg$yy) <- yinfo$id; 
+```
+
+
+```{r}
+dim(yinfo)
+dim(net$yy)
+dim(net$xy)
+dim(xinfo)
+```
+
+
+
+```{r}
+library(spacemap)
+ig <- spacemap::adj2igraph(yy = net$yy, xy = net$xy, yinfo = yinfo, xinfo = xinfo)
+```
+
+```{r}
+ig <- rankHub(ig = ig, bdeg = bdeg$yy, level = "y")
+ig <- rankHub(ig = ig, bdeg = bdeg$xy, level = "x")
+```
+
+```{r}
+ig <- cisTrans(ig = ig, level = "x-y", cw = 2e6)
+xhubs <- reportHubs(ig, top = 30, level = "x")
+xhubs
+```
+
+```{r}
+yhubs <- reportHubs(ig, top = 10, level = "y")
+yhubs
+```
+
+```{r}
+library(igraph)
+mods <- cluster_edge_betweenness(ig)
+```
+
+
+
+## GO Annotation
+
+```{r}
+rnaset <- readRDS(file = file.path(filterdir,"disc-mrna-eset-nostd-union-dropout-std-Her2.rds"))
+rna_entrez_ids <- pData(featureData(rnaset))[,"EntrezReannotated"]
+sum(is.na(rna_entrez_ids))
+library(IRanges)
+library(org.Hs.eg.db)
+hs_feature_list <- function(db, eg) { 
+  mk <- mappedkeys(db)
+  xx <- as.list(db[eg[eg %in% mk]])
+}
+leg2go <- hs_feature_list(db = org.Hs.egGO, eg = rna_entrez_ids)
+```
+
+
+```{r}
+library(foreach)
+leg2go_filtered <- foreach(got = leg2go, eg = names(leg2go)) %do% { 
+  bp_domain <- sapply(got, function(x) x[["Ontology"]]) == "BP"
+  #bp_domain <- TRUE
+  not_nd_domain <- sapply(got, function(x) x[["Evidence"]]) != "ND"
+  bp_got <- got[bp_domain & not_nd_domain]
+  sapply(bp_got, function(x) x[["GOID"]]) 
+}
+names(leg2go_filtered) <- names(leg2go)
+leg2go_filtered <- leg2go_filtered[sapply(leg2go_filtered, length) != 0]
+```
+
+```{r}
+suppressPackageStartupMessages(library(topGO))
+go2eg <- inverseList(leg2go_filtered)
+#remove duplicate entrez genes
+go2eg <- lapply(go2eg, function(x) x[!duplicated(x)])
+#saveRDS(go2eg, file = "~/repos/neta-bccptac/data/no-len-trim-rna-go-bp-to-entrez-gene-list.rds")
+gosize <- sapply(go2eg, length)
+go2eg <- go2eg[ gosize >= 15 & gosize <= 300]
+#number of go terms satisfying conditions
+length(go2eg)
+#assure each go term has a list of non-duplicate ids
+stopifnot(all(sapply(go2eg, anyDuplicated) == 0))
+saveRDS(go2eg, file = file.path(filterdir, "her2-go-bp-to-entrez-gene-list.rds"))
+```
+
+```{r}
+library(AnnotationDbi)
+#human readable 
+process_alias <- Term(names(go2eg))
+```
+
+```{r}
+hgp <- xHubEnrich(ig = ig, go2eg = go2eg)
+hgp2 <- hgp[hgp$neighbor_percentage > .30,]
+hgp2
+```
+
+
+```{r}
+outmod <- modEnrich(ig = ig, mods = mods, levels = "y", go2eg = go2eg, process_alias = process_alias, prefix = "R")
+```
+
+
+
+```{r}
+outmod$etab
+```
+
+```{r}
+filename <- file.path(filterdir, "her2-06-boot-vote.graphml")
+#delete nodes without edges from the graph object
+vis <- delete_vertices(graph = outmod$ig, v = V(outmod$ig)[igraph::degree(outmod$ig) == 0])
+igraph::write_graph(graph = vis, file = filename, format = "graphml")
+```
+
