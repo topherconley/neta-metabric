@@ -2,10 +2,11 @@
 title: "METABRIC Discovery Her2 Analysis"
 author: "Christopher Conley, Pei Wang, Umut Ozbek, Jie Peng"
 date: "`r Sys.Date()`"
-output:
-  html_document:
-    toc: true
-    toc_float: true
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{METABRIC Discovery Her2 Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, echo = FALSE}
@@ -13,8 +14,7 @@ library(knitr)
 opts_chunk$set(message=F, warning=F)
 ```
 
-
-This document highlights model tuning with cross validation, comparisons of CV.Vote and Boot.Vote ensemble networks, and network analysis efforts on Her2 breast cancer samples. 
+This document highlights the full network analysis pipeline of spaceMap applied to Her2 breast cancer samples. There are three major sections, namely (i) model tuning with cross validation, (ii) comparisons of CV.Vote and Boot.Vote ensemble networks, (iii) and network analysis efforts. Model tuning is an iterative process of arriving at the final tuning parameters, which  we detail with various diagnostic tools. 
 
 ## CV Vote Model Tuning 
 
@@ -53,8 +53,8 @@ In this tuning iteration which involves spaceMap, we set the `lam1` parameter to
 ```{r}
 i03 <- new.env()
 load("~/scratch-data/neta-metabric/disc-cv-vote/her2/03/her2-03.rda", envir = i03)
-tmap <- i03$tmap
-plot(tmap$lam2, tmap$lam3, ylab = "lam3", xlab = "lam2", pch = 19)
+tmap3 <- i03$tmap
+plot(tmap3$lam2, tmap3$lam3, ylab = "lam3", xlab = "lam2", pch = 19)
 ```
 
 
@@ -64,81 +64,108 @@ Note the following plot shows the CV scores profile for each tuning penalty of s
 dx3 <- dxsmap(file = "~/scratch-data/neta-metabric/disc-cv-vote/her2/03/her2-03.rda", T, c(0,0.5))
 ```
 
-Above, it is clear that the CV-selected `lam1` agrees with the first tuning iteration when just mRNA was input to SPACE. In the next iteration of tuning spaceMap, we will need to explore smaller values of `lam1`. 
-With respect to `lam2,lam3`, the CV-score profiles do not clarify a clear optimal value, even though these tuning parameters index models with wide ranging numbers on x--y edges. The following plot shows the effect of `lam2,lam3` on x--y edge number.  
+Above, it is clear that the CV-selected `lam1` agrees with the first tuning iteration when just mRNA was input to SPACE. In the next iteration of tuning spaceMap, we will need to explore smaller values of `lam1`. With respect to `lam2,lam3`, the CV-score profiles do not clarify a clear optimal value, even though these tuning parameters index models with wide ranging numbers on x--y edges. The following plot shows the effect of `lam2,lam3` on x--y edge number.  
 
 ```{r}
 grid.arrange(dx3$v2[[4]],dx3$v3[[4]], ncol = 2)
 ```
 
 
-From these diagnostics, we define the next tuning iteration of spaceMap that searches 
+These diagnostics on `lam2,lam3` suggest a broad range of models have been considered, especially those favoring sparse models with less than 5000 x--y eges; however, the model selected tuning parameters on the boundary of the grid, as seen below, where the number "3" denotes the CV-selected tuning parameters for the 3rd iteration. In the next tuning iteration, we will need to shift the tuning parameters `lam1,lam2` lower. 
+
+```{r, echo=FALSE}
+par(mfrow = c(1,2))
+plot(tmap3$lam1, tmap3$lam2, ylab = "lam2", xlab = "lam1", 
+     pch = 19)
+points(i03$cvsmap$minTune$lam1, i03$cvsmap$minTune$lam2, pch = "3", cex = 2)
+
+plot(tmap3$lam2, tmap3$lam3, ylab = "lam3", xlab = "lam2", 
+     pch = 19)
+points(i03$cvsmap$minTune$lam2, i03$cvsmap$minTune$lam3, pch = "3", cex = 2)
+```
 
 ### Tuning iteration 4
 
 
-```{r}
-i04 <- new.env()
-load("~/scratch-data/neta-metabric/disc-cv-vote/her2/04/her2-04.rda", envir = i04)
-tmap2 <- i04$tmap
-par(mfrow = c(1,2))
-plot(tmap$lam1, tmap$lam2, ylab = "lam2", xlab = "lam1", 
-     pch = 19, xlim = c(50,80), ylim = c(8,40))
-points(tmap2$lam1, tmap2$lam2, pch = 22)
-points(i03$cvsmap$minTune$lam1, i03$cvsmap$minTune$lam2, pch = "3", cex = 2)
-points(i04$cvsmap$minTune$lam1, i04$cvsmap$minTune$lam2, pch = "4", cex = 2)
-
-
-plot(tmap$lam2, tmap$lam3, ylab = "lam3", xlab = "lam2", 
-     pch = 19, xlim = c(8,35))
-points(tmap2$lam2, tmap2$lam3, pch = 22)
-points(i03$cvsmap$minTune$lam2, i03$cvsmap$minTune$lam3, pch = "3", cex = 2)
-points(i04$cvsmap$minTune$lam2, i04$cvsmap$minTune$lam3, pch = "4", cex = 2)
-```
-
-
-
-```{r}
-i04$cvsmap$minTune
-i04$tictoc/60^2
-dim(i04$tmap)
-```
-
-
+The fourth iteration produces CV-score profiles suggesting we have found near optimal values for all three tuning parameters. However, `lam2` is still on the boundary because of the odd-shaped nature of the tuning grid. 
 
 ```{r}
 dx4 <- dxsmap(file = "~/scratch-data/neta-metabric/disc-cv-vote/her2/04/her2-04.rda")
 ```
 
+In the figure, below, we see that iteration 4 tuning grid (rectangles) was not lowered sufficiently for `lam2`; the  number "4" on the plot indicates the CV-selected tuning parameter. The reason for the rectangular patch-work tuning grid was to save computational time by not tuning models with extremely high x--y edges due to low-penalty combinations of `lam2,lam3`. Clearly, we need to lower the `lam2` parameter. 
 
+```{r, echo=FALSE}
+i04 <- new.env()
+load("~/scratch-data/neta-metabric/disc-cv-vote/her2/04/her2-04.rda", envir = i04)
+tmap4 <- i04$tmap
+
+par(mfrow = c(1,2))
+plot(tmap3$lam1, tmap3$lam2, ylab = "lam2", xlab = "lam1", 
+     pch = 19, xlim = c(50,80), ylim = c(8,40))
+points(tmap4$lam1, tmap4$lam2, pch = 22)
+points(i03$cvsmap$minTune$lam1, i03$cvsmap$minTune$lam2, pch = "3", cex = 2)
+points(i04$cvsmap$minTune$lam1, i04$cvsmap$minTune$lam2, pch = "4", cex = 2)
+
+
+plot(tmap3$lam2, tmap3$lam3, ylab = "lam3", xlab = "lam2", 
+     pch = 19, xlim = c(8,35))
+points(tmap4$lam2, tmap4$lam3, pch = 22)
+points(i03$cvsmap$minTune$lam2, i03$cvsmap$minTune$lam3, pch = "3", cex = 2)
+points(i04$cvsmap$minTune$lam2, i04$cvsmap$minTune$lam3, pch = "4", cex = 2)
+```
+
+It would appear this is a step in the right direction since the best CV-score of iteration 4 (score: `r round(i04$cvsmap$logcvScore,3)`) is lower than iteration 3 (score: `r round(i03$cvsmap$logcvScore,3)`). 
+
+### Tuning iteration 5
+
+Inspecting iteration 5 (see "+" symbols on plot below), we check the boundary and see that none of the tuning parameters is on the boundary.  Further, the best CV-score of iteration 5 (score: `r round(i05$cvsmap$logcvScore,3)`) is lower than iteration 4 (score: `r round(i04$cvsmap$logcvScore,3)`). 
+
+```{r, echo=FALSE}
+i05 <- new.env()
+load("~/scratch-data/neta-metabric/disc-cv-vote/her2/05/her2-05.rda", envir = i05)
+tmap5 <- i05$tmap
+
+par(mfrow = c(1,2))
+plot(tmap3$lam1, tmap3$lam2, ylab = "lam2", xlab = "lam1", 
+     pch = 19, xlim = c(50,80), ylim = c(8,40))
+points(tmap4$lam1, tmap4$lam2, pch = 22)
+points(tmap5$lam1, tmap5$lam2, pch = "+")
+points(i03$cvsmap$minTune$lam1, i03$cvsmap$minTune$lam2, pch = "3", cex = 2)
+points(i04$cvsmap$minTune$lam1, i04$cvsmap$minTune$lam2, pch = "4", cex = 2)
+points(i05$cvsmap$minTune$lam1, i05$cvsmap$minTune$lam2, pch = "5", cex = 2)
+
+
+plot(tmap3$lam2, tmap3$lam3, ylab = "lam3", xlab = "lam2", 
+     pch = 19, xlim = c(8,35))
+points(tmap4$lam2, tmap4$lam3, pch = 22)
+points(tmap5$lam2, tmap5$lam3, pch = "+")
+points(i03$cvsmap$minTune$lam2, i03$cvsmap$minTune$lam3, pch = "3", cex = 2)
+points(i04$cvsmap$minTune$lam2, i04$cvsmap$minTune$lam3, pch = "4", cex = 2)
+points(i05$cvsmap$minTune$lam2, i05$cvsmap$minTune$lam3, pch = "5", cex = 2)
+```
+
+Looking at the CV-profiles (zoomin in on top 10% of scores), we believe we have found a stopping point.   
 
 ```{r}
-i03$cvsmap$logcvScore
-i04$cvsmap$logcvScore
+dx5 <- dxsmap(file = "~/scratch-data/neta-metabric/disc-cv-vote/her2/05/her2-05.rda", T, c(0,.1))
 ```
 
 
-```{r}
-dx4$gcvdrop
-```
+The drop in edge count from the training folds to the CV.Vote model and the Boot.Vote model are indications of model instability. The following plot shows
+we see more stability in the y--y edges than the x-y edge for the CV-vote model. It is somewhat troubling to see the large drop in model size for the the Boot.Vote model (B = 250).
 
 ```{r}
-dx4$gxhub
-```
-
-
-
-```{r}
-bv <- readRDS(file.path("~/scratch-data/neta-metabric/disc-cv-vote/her2/06/","her2-06-boot-vote.rds"))
-dbv <- data.frame(xy = nonZeroWhole(bv$bv$xy,0.0), 
-                  yy = nonZeroUpper(bv$bv$yy,0.0), 
+bv <- readRDS(file.path("~/scratch-data/neta-metabric/disc-boot-vote/her2/01/","her2-boot-vote-01.rds"))
+dbv <- data.frame(xy = nonZeroWhole(bv$bv$xy,0.0),
+                  yy = nonZeroUpper(bv$bv$yy,0.0),
                   type = "Boot.Vote")
-dx4$gcvdrop + geom_point(data = dbv, size  = 2)
+dx5$gcvdrop + geom_point(data = dbv, size  = 2)
 ```
 
+## Network Analysis on Boot.Vote
 
-
-## Network Analysis
+Read in the probe and CNA feature information stored in the ExpressionSet.
 
 ```{r}
 library(Biobase)
@@ -153,15 +180,19 @@ xinfo$end <- as.integer(xinfo$end)
 
 ### Collapse probes to gene level
 
+For the network analysis, we decided to collapse probe information down onto the gene-level. For example, if two probes map to the same locus, we take the union of their edges to form a single node. First, import and label fetures of the CV.Vote network. 
 
 ```{r}
+#label the adjacency matrix 
+#net <- i05$cvsmap$cvVote[c("yy","xy")]
 net <- bv$bv
 rownames(net$xy) <- xinfo$id; colnames(net$xy) <- yinfo$id;
 rownames(net$yy) <- yinfo$id; colnames(net$yy) <- yinfo$id;
-bdeg <- bv$bdeg
-colnames(bdeg$xy) <- xinfo$id; colnames(bdeg$yy) <- yinfo$id; 
+# bdeg <- bv$bdeg
+# colnames(bdeg$xy) <- xinfo$id; colnames(bdeg$yy) <- yinfo$id; 
 ```
 
+The following code merges probes onto the gene level. 
 
 ```{r}
 egtab <- table(yinfo$EntrezReannotated)
@@ -183,9 +214,10 @@ net$yy <- net$yy[keepers,keepers]
 net$xy <- net$xy[,keepers]
 #adjust order of yinfo
 yinfo <- yinfo[match(keepers,yinfo$id),]
-bdeg$yy <- bdeg$yy[,keepers]
+#bdeg$yy <- bdeg$yy[,keepers]
 ```
 
+Next we replace the probe ID with the Entrez gene id. 
 
 ```{r}
 probe2eg <- yinfo[,c("id", "EntrezReannotated")]
@@ -198,36 +230,32 @@ yinfo$id <- ifelse(is.na(eg), yinfo$id, eg)
 stopifnot(!anyDuplicated(yinfo$id))
 ```
 
+Update the feature name labels of the network after merging the probes to the gene level. 
 
 ```{r}
 rownames(net$xy) <- xinfo$id; colnames(net$xy) <- yinfo$id;
 rownames(net$yy) <- yinfo$id; colnames(net$yy) <- yinfo$id;
-colnames(bdeg$xy) <- xinfo$id; colnames(bdeg$yy) <- yinfo$id; 
+#colnames(bdeg$xy) <- xinfo$id; colnames(bdeg$yy) <- yinfo$id; 
 ```
 
-
-```{r}
-dim(yinfo)
-dim(net$yy)
-dim(net$xy)
-dim(xinfo)
-```
-
-
+Now there are `r length(secprobes)` mRNA feature nodes lost from merging probes, leaving `r length(keepers)` mRNA gene nodes. Import the network to cytoscape. 
 
 ```{r}
 library(spacemap)
 ig <- spacemap::adj2igraph(yy = net$yy, xy = net$xy, yinfo = yinfo, xinfo = xinfo)
 ```
 
+### Hub analysis
+
 ```{r}
-ig <- rankHub(ig = ig, bdeg = bdeg$yy, level = "y")
-ig <- rankHub(ig = ig, bdeg = bdeg$xy, level = "x")
+ig <- rankHub(ig = ig, level = "y")
+ig <- rankHub(ig = ig, level = "x")
 ```
 
 ```{r}
+library(IRanges)
 ig <- cisTrans(ig = ig, level = "x-y", cw = 2e6)
-xhubs <- reportHubs(ig, top = 30, level = "x")
+xhubs <- reportHubs(ig, top = 10, level = "x")
 xhubs
 ```
 
@@ -241,9 +269,7 @@ library(igraph)
 mods <- cluster_edge_betweenness(ig)
 ```
 
-
-
-## GO Annotation
+### GO annotation
 
 ```{r}
 rnaset <- readRDS(file = file.path(filterdir,"disc-mrna-eset-nostd-union-dropout-std-Her2.rds"))
@@ -299,6 +325,7 @@ hgp2 <- hgp[hgp$neighbor_percentage > .30,]
 hgp2
 ```
 
+### Module analysis
 
 ```{r}
 outmod <- modEnrich(ig = ig, mods = mods, levels = "y", go2eg = go2eg, process_alias = process_alias, prefix = "R")
@@ -310,10 +337,14 @@ outmod <- modEnrich(ig = ig, mods = mods, levels = "y", go2eg = go2eg, process_a
 outmod$etab
 ```
 
+## Save results
+
 ```{r}
-filename <- file.path(filterdir, "her2-06-boot-vote.graphml")
+filename <- file.path(filterdir, "her2-boot-vote-01.graphml")
 #delete nodes without edges from the graph object
 vis <- delete_vertices(graph = outmod$ig, v = V(outmod$ig)[igraph::degree(outmod$ig) == 0])
 igraph::write_graph(graph = vis, file = filename, format = "graphml")
+save.image(file = file.path(filterdir, "her2-full-analysis.rda"))
 ```
+
 
