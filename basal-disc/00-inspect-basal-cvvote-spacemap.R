@@ -3,6 +3,10 @@
 ############
 #   TRY 01 #
 ############
+outdir <- "~/scratch-data/neta-metabric/disc-cv-vote/basal/04"
+load(file = file.path(outdir, "basal-04.rda"))
+
+
 
 outdir <- "~/scratch-data/neta-metabric/disc-cv-vote/basal/03"
 load(file = file.path(outdir, "basal-03.rda"))
@@ -120,9 +124,11 @@ grid.arrange(cvVis3[[1]], cvVis3[[2]],cvVis3[[3]], cvVis3[[4]], ncol = 2)
 
 
 library(ggplot2)
-cvVis1[[1]] + coord_cartesian(ylim= c(7.18,7.20))
-cvVis2[[1]] + coord_cartesian(ylim= c(7.18,7.20))
-cvVis3[[1]] + coord_cartesian(ylim= c(7.15,7.20))
+cvVis1[[1]] + coord_cartesian(ylim= c(7.17,7.20))
+cvVis2[[1]] + coord_cartesian(ylim= c(7.07,7.15))
+cvVis3[[1]] + coord_cartesian(ylim= c(7.07,7.10))
+
+cvVis2[[4]] + coord_cartesian(ylim = c(0, 20000))
 
 spacemap::tuneVis(cvOut = cvsmap, testSetLen = nsplits, 
                   tuneParam1 = tmap$lam2, tuneParam1Name = "lam2",
@@ -156,7 +162,7 @@ points(tmap2$lam2, tmap2$lam3, pch = 19)
 
 tmap4 <- expand.grid(lam1 = exp(seq(log(60), log(70), length = 10)),
                      lam2 = seq(20^4, 29^4, length = 10)^(1/4),
-                     lam3 = exp(seq(log(3), log(25), length = 10)))
+                     lam3 = exp(seq(log(4), log(25), length = 10)))
 
 
 ##################
@@ -183,8 +189,11 @@ points(tmap$lam2, tmap$lam3, col = "#7570B3", pch = 20)
 points(cvsmap$minTune$lam2, cvsmap$minTune$lam3, pch ="*", col = "#7570B3", cex = 3)
 cvsmap$logcvScore
 
-points(tmap4$lam2, tmap4$lam3, col = "#A6761D", pch = 19)
-
+outdir <- "~/scratch-data/neta-metabric/disc-cv-vote/basal/04"
+load(file = file.path(outdir, "basal-04.rda"))
+points(tmap$lam2, tmap$lam3, col = "#A6761D", pch = 19)
+points(cvsmap$minTune$lam2, cvsmap$minTune$lam3, pch ="*", col = "#A6761D", cex = 3)
+cvsmap$logcvScore
 
 ##################
 # lam1 vs lam2   #
@@ -208,7 +217,11 @@ points(tmap$lam1, tmap$lam2, col = "#7570B3", pch = 20)
 points(cvsmap$minTune$lam1, cvsmap$minTune$lam2, pch ="*", col = "#7570B3", cex = 3)
 cvsmap$logcvScore
 
-points(tmap4$lam1, tmap4$lam2, col = "#A6761D", pch = 19)
+outdir <- "~/scratch-data/neta-metabric/disc-cv-vote/basal/04"
+load(file = file.path(outdir, "basal-04.rda"))
+points(tmap$lam1, tmap$lam2, col = "#A6761D", pch = 20)
+points(cvsmap$minTune$lam1, cvsmap$minTune$lam2, pch ="*", col = "#A6761D", cex = 3)
+cvsmap$logcvScore
 
 ##################
 # lam1 vs lam3   #
@@ -233,7 +246,11 @@ points(cvsmap$minTune$lam1, cvsmap$minTune$lam3, pch ="*", col = "#7570B3", cex 
 cvsmap$logcvScore
 
 
-points(tmap4$lam1, tmap4$lam3, col = "#A6761D", pch = 19)
+outdir <- "~/scratch-data/neta-metabric/disc-cv-vote/basal/04"
+load(file = file.path(outdir, "basal-04.rda"))
+points(tmap$lam1, tmap$lam3, col = "#A6761D", pch = 19)
+points(cvsmap$minTune$lam1, cvsmap$minTune$lam3, pch ="*", col = "#A6761D", cex = 3)
+cvsmap$logcvScore
 
 #next grid
 idx <- which(rowMeans(cvsmap$metricScores$dfGamma) < 10000 & rowMeans(cvsmap$metricScores$dfParCor) < 10000)
