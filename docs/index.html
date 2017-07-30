@@ -11,19 +11,16 @@
 
 <meta name="author" content="Christopher Conley, Pei Wang, Umut Ozbek, Jie Peng" />
 
-<meta name="date" content="2017-05-21" />
+<meta name="date" content="2017-06-08" />
 
-<title>spaceMap’s Network Analysis of METABRIC Study Data</title>
+<title>METABRIC Application of spaceMap</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="site_libs/bootstrap-3.3.5/css/united.min.css" rel="stylesheet" />
+<link href="site_libs/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
-<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
-<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
-<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-1.1/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-1.1/highlight.js"></script>
@@ -103,34 +100,34 @@ button.code-folding-btn:focus {
 <style type="text/css">
 /* padding for bootstrap navbar */
 body {
-  padding-top: 51px;
+  padding-top: 60px;
   padding-bottom: 40px;
 }
 /* offset scroll position for anchor links (for fixed navbar)  */
 .section h1 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 65px;
+  margin-top: -65px;
 }
 
 .section h2 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 65px;
+  margin-top: -65px;
 }
 .section h3 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 65px;
+  margin-top: -65px;
 }
 .section h4 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 65px;
+  margin-top: -65px;
 }
 .section h5 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 65px;
+  margin-top: -65px;
 }
 .section h6 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 65px;
+  margin-top: -65px;
 }
 </style>
 
@@ -167,101 +164,6 @@ $(document).ready(function () {
 
 
 
-<script>
-$(document).ready(function ()  {
-
-    // move toc-ignore selectors from section div to header
-    $('div.section.toc-ignore')
-        .removeClass('toc-ignore')
-        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
-
-    // establish options
-    var options = {
-      selectors: "h1,h2,h3",
-      theme: "bootstrap3",
-      context: '.toc-content',
-      hashGenerator: function (text) {
-        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
-      },
-      ignoreSelector: ".toc-ignore",
-      scrollTo: 0
-    };
-    options.showAndHide = true;
-    options.smoothScroll = true;
-
-    // tocify
-    var toc = $("#TOC").tocify(options).data("toc-tocify");
-});
-</script>
-
-<style type="text/css">
-
-#TOC {
-  margin: 25px 0px 20px 0px;
-}
-@media (max-width: 768px) {
-#TOC {
-  position: relative;
-  width: 100%;
-}
-}
-
-
-.toc-content {
-  padding-left: 30px;
-  padding-right: 40px;
-}
-
-div.main-container {
-  max-width: 1200px;
-}
-
-div.tocify {
-  width: 20%;
-  max-width: 260px;
-  max-height: 85%;
-}
-
-@media (min-width: 768px) and (max-width: 991px) {
-  div.tocify {
-    width: 25%;
-  }
-}
-
-@media (max-width: 767px) {
-  div.tocify {
-    width: 100%;
-    max-width: none;
-  }
-}
-
-.tocify ul, .tocify li {
-  line-height: 20px;
-}
-
-.tocify-subheader .tocify-item {
-  font-size: 0.90em;
-  padding-left: 25px;
-  text-indent: 0;
-}
-
-.tocify .list-group-item {
-  border-radius: 0px;
-}
-
-
-</style>
-
-<!-- setup 3col/9col grid for toc_float and main content  -->
-<div class="row-fluid">
-<div class="col-xs-12 col-sm-4 col-md-3">
-<div id="TOC" class="tocify">
-</div>
-</div>
-
-<div class="toc-content col-xs-12 col-sm-8 col-md-9">
-
-
 
 
 <div class="navbar navbar-default  navbar-fixed-top" role="navigation">
@@ -287,24 +189,16 @@ div.tocify {
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="disc-data-by-subtype.html">1. Data</a>
+      <a href="disc-data-by-subtype.html">Data Processing</a>
     </li>
-    <li class="dropdown">
-      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-        2. CV Vote
-         
-        <span class="caret"></span>
-      </a>
-      <ul class="dropdown-menu" role="menu">
-        <li class="dropdown-header">Basal</li>
-        <li>
-          <a href="bas-cv.html"></a>
-        </li>
-        <li class="dropdown-header">Her2</li>
-        <li>
-          <a href="her2-cv.html"></a>
-        </li>
-      </ul>
+    <li>
+      <a href="disc-lumb-pipeline.html">Luminal B</a>
+    </li>
+    <li>
+      <a href="disc-her2-pipeline.html">Her2</a>
+    </li>
+    <li>
+      <a href="disc-basal-pipeline.html">Basal-like</a>
     </li>
   </ul>
 </li>
@@ -330,23 +224,21 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">spaceMap’s Network Analysis of METABRIC Study Data</h1>
+<h1 class="title toc-ignore">METABRIC Application of spaceMap</h1>
 <h4 class="author"><em>Christopher Conley, Pei Wang, Umut Ozbek, Jie Peng</em></h4>
-<h4 class="date"><em>2017-05-21</em></h4>
+<h4 class="date"><em>2017-06-08</em></h4>
 
 </div>
 
 
-<div id="network-analysis" class="section level2">
-<h2>Network Analysis</h2>
-<p>Here we document the network analysis of the <a href="http://www.nature.com/nature/journal/v486/n7403/full/nature10983.html">METABRIC study data</a> with <a href="https://topherconley.github.io/spacemap/">spaceMap</a>.</p>
+<div id="goals" class="section level2">
+<h2>Goals</h2>
+<p>The application of <a href="https://topherconley.github.io/spacemap/">spaceMap</a> to different breast cancer subtypes from the <a href="http://www.nature.com/nature/journal/v486/n7403/full/nature10983.html">METABRIC study data</a> is an experiment to see how spaceMap learns meaningful tumor network structures common to all subtypes and also distinguishes them.</p>
 </div>
 
 <p>Copyright &copy; 2017 Regents of the University of California. All rights reserved.</p>
 
 
-</div>
-</div>
 
 </div>
 

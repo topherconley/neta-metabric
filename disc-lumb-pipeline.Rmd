@@ -1,0 +1,353 @@
+---
+title: "METABRIC Discovery Luminal B Analysis"
+author: "Christopher Conley, Pei Wang, Umut Ozbek, Jie Peng"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r, echo = FALSE}
+library(knitr)
+opts_chunk$set(message=F, warning=F, cache = TRUE)
+```
+
+This document highlights the full network analysis pipeline of spaceMap applied to 238 Luminal B breast cancer samples. There are three major sections, namely (i) model tuning with cross validation, (ii) comparisons of CV.Vote and Boot.Vote ensemble networks, (iii) and network analysis efforts. Model tuning is an iterative process of arriving at the final tuning parameters, which we detail with various diagnostic tools. 
+
+## CV Vote Model Tuning 
+
+The following function helps consolidate the diagnostic information for different iterations of CV.
+
+```{r}
+source("dxCV.R")
+```
+
+### Tuning iteration 1
+
+The first tuning iteration applied SPACE to the mRNA response data and produced a very clear valley around `lam=143`. With the sample size being so much larger than the Basal and Her2 subtypes, it was unclear what range for `lam2,lam3` would be suitable to maintain some level of sparsity. To quickly get a sense of what range would be suitable, we fit spaceMap to a single CV training split (instead of 10-fold CV) and inspected the effect of tuning parameters `lam2,lam3` on the x--y edge size. The following plots show (as expected) `lam2` has a larger effect on sparsity than `lam3` and that initial range for `lam2` and `lam3` we selected is a reasonable starting point that will explore a broad number of network topologies. 
+
+```{r}
+i01 <- new.env()
+outdir <- "~/scratch-data/neta-metabric/disc-cv-vote/lumb/01/"
+load(file.path(outdir, "lumb-01a.rda"), envir = i01)
+par(mfrow = c(1,2))
+plot(i01$tmap$lam2, i01$ntmap1$nxy, pch = 19, xlab = "lam2", ylab = "# x--y edges")
+plot(i01$tmap$lam3, i01$ntmap1$nxy, pch = 19, xlab = "lam3", ylab = "# x--y edges")
+```
+
+### Tuning iteration 2
+
+The CV-score profiles appear smooth and show consistent behavior, but the CV-selected `lam1,lam3` lie on the boundary of the grid suggesting we need to extend the grid to lower penalties for these two parameters. Higher penalties of this specific tuning grid are clearly unfavorable for all the tuning parameters. 
+
+```{r}
+dx2 <- dxsmap(file = "~/scratch-data/neta-metabric/disc-cv-vote/lumb//02/lumb-02-dropNA.rda", F)
+```
+
+### Tuning iteration 3
+
+Next we explored a smaller grid to get a sense of how much we should shift `lam1,lam2` downward. Combining CV-score profiles from iterations 2 and 3, it would appear the neighborhood centered at  `lam=125, lam2=40,lam3=15` is most optimal. We will confirm this view with a 4th iteration.
+
+```{r}
+#zoom in on top 50% CV score profiles.
+dx3 <- dxsmap(file = "~/scratch-data/neta-metabric/disc-cv-vote/lumb/03/lumb-03-dropNA.rda", T, c(0,0.5))
+```
+
+### Tuning iteration 4
+
+
+Zooming in on the top 20% of CV-scores of the 4th tuning iteration, our earlier hypothesis about the best neighborhood is confirmed. 
+
+```{r}
+dx4 <- dxsmap(file = "~/scratch-data/neta-metabric/disc-cv-vote/lumb/04/lumb-04-dropNA.rda", T, c(0,0.2))
+```
+
+The following plot demonstrates the consistent stability of the CV-selected tuning parameters across different tuning iterations; labels 2,3,4 denote the CV-selected tuning parameters for each iteration; the background points correspond to tuning grids for each iteration (2=dots,3=squares,4=pluses). None of the tuning parameters are on the boundary. 
+
+```{r, echo=FALSE}
+i02 <- new.env()
+load("~/scratch-data/neta-metabric/disc-cv-vote/lumb/02/lumb-02-dropNA.rda", envir = i02)
+tmap2 <- i02$tmap
+i03 <- new.env()
+load("~/scratch-data/neta-metabric/disc-cv-vote/lumb/03/lumb-03-dropNA.rda", envir = i03)
+tmap3 <- i03$tmap
+i04 <- new.env()
+load("~/scratch-data/neta-metabric/disc-cv-vote/lumb/04/lumb-04-dropNA.rda", envir = i04)
+tmap4 <- i04$tmap
+par(mfrow = c(1,2))
+plot(tmap2$lam1, tmap2$lam2, ylab = "lam2", xlab = "lam1", 
+     pch = 19, xlim = c(110,180), ylim = c(8,80))
+points(tmap3$lam1, tmap3$lam2, pch = 22)
+points(tmap4$lam1, tmap4$lam2, pch = "+")
+points(i02$cvsmap$minTune$lam1, i02$cvsmap$minTune$lam2, pch = "2", cex = 2)
+points(i03$cvsmap$minTune$lam1, i03$cvsmap$minTune$lam2, pch = "3", cex = 2)
+points(i04$cvsmap$minTune$lam1, i04$cvsmap$minTune$lam2, pch = "4", cex = 2)
+plot(tmap2$lam2, tmap2$lam3, ylab = "lam3", xlab = "lam2", 
+     pch = 19, xlim = c(15,70), ylim = c(0, 110))
+points(tmap3$lam2, tmap3$lam3, pch = 22)
+points(tmap4$lam2, tmap4$lam3, pch = "+")
+points(i02$cvsmap$minTune$lam2, i02$cvsmap$minTune$lam3, pch = "2", cex = 2)
+points(i03$cvsmap$minTune$lam2, i03$cvsmap$minTune$lam3, pch = "3", cex = 2)
+points(i04$cvsmap$minTune$lam2, i04$cvsmap$minTune$lam3, pch = "4", cex = 2)
+```
+
+The best CV-score of iteration 4 (score: `r round(i04$cvsmap$logcvScore,3)`) is lower than iteration 3 (score: `r round(i03$cvsmap$logcvScore,3)`) and iteration 2 (score: `r round(i02$cvsmap$logcvScore,3)`). Taking these lines of evidence together, we believe we have found good tuning parameters to move onto Boot.Vote analysis. 
+
+## Boot.Vote 
+
+We applied the Boot.Vote procedure with the CV-selected tuning parameters as input.  In the boostrap step, we resampled only 90% of the original samples because the CV-selected tuning parameters depend on the scale of the sample size; resampling at 90% matches the sample size at which the tuning parameters were selected under 10-fold CV. This sample-size matching step is thought to be relatively more important for networks learned from larger samples because a 10% drop in sample size is much greater.
+
+```{r}
+library(spacemap)
+bv <- readRDS(file.path("~/scratch-data/neta-metabric/disc-boot-vote/lumb/01/lumb-boot-vote-p90-01.rds"))
+dbv <- data.frame(xy = nonZeroWhole(bv$bv$xy,0.0),
+                  yy = nonZeroUpper(bv$bv$yy,0.0),
+                  type = "Boot.Vote")
+dx4$gcvdrop + geom_point(data = dbv, size  = 2)
+```
+
+The drop in edge count from the training folds to the CV.Vote model and the Boot.Vote model are indications of model instability.  We see the drop of model size for Boot.Vote from CV.Vote is not as big for Luminal B relative to Her2 and Basal-like, which we believe reflects the advantage of having about 3 times as many samples to learn the network. 
+
+## Gene Ontology annotation
+
+The identifier is already an Entrez accession for the mRNA features. Obtain the Entrez accessions with their GO mappings.
+
+```{r}
+library(Biobase)
+filterdir <- "~/scratch-data/neta-metabric/disc-filtered/"
+rnaset <- readRDS(file = file.path(filterdir,"disc-mrna-eset-nostd-union-dropout-std-LumB.rds"))
+rna_entrez_ids <- pData(featureData(rnaset))[,"EntrezReannotated"]
+library(IRanges)
+library(org.Hs.eg.db)
+hs_feature_list <- function(db, eg) { 
+  mk <- mappedkeys(db)
+  xx <- as.list(db[eg[eg %in% mk]])
+}
+leg2go <- hs_feature_list(db = org.Hs.egGO, eg = rna_entrez_ids)
+```
+
+There are `r sum(is.na(rna_entrez_ids))` Entrez accesions without any GO mapping. Map the Entrez accessions to GO biological process terms with some valid evidence (not “ND”).
+
+```{r}
+library(foreach)
+leg2go_filtered <- foreach(got = leg2go, eg = names(leg2go)) %do% { 
+  bp_domain <- sapply(got, function(x) x[["Ontology"]]) == "BP"
+  not_nd_domain <- sapply(got, function(x) x[["Evidence"]]) != "ND"
+  bp_got <- got[bp_domain & not_nd_domain]
+  sapply(bp_got, function(x) x[["GOID"]]) 
+}
+names(leg2go_filtered) <- names(leg2go)
+leg2go_filtered <- leg2go_filtered[sapply(leg2go_filtered, length) != 0]
+```
+
+Reverse the mapping so that the key is a GO biological process and the values are a character vector of Entrez gene accessions. Keep those keys that have at least 15 but no more than 300 RefSeq accessions.
+
+```{r}
+suppressPackageStartupMessages(library(topGO))
+go2eg <- inverseList(leg2go_filtered)
+#remove duplicate Entrez genes
+go2eg <- lapply(go2eg, function(x) x[!duplicated(x)])
+gosize <- sapply(go2eg, length)
+go2eg <- go2eg[ gosize >= 15 & gosize <= 300]
+```
+
+There are `r length(go2eg)` GO terms satisfying these conditions. Assure each go term has a list of non-duplicate ids and save the GO background.
+
+```{r}
+stopifnot(all(sapply(go2eg, anyDuplicated) == 0))
+saveRDS(go2eg, file = file.path(filterdir, "lumb-go-bp-to-entrez-gene-list.rds"))
+```
+
+Obtain human readable versions of the GO accessions for reporting GO enrichment later. 
+
+```{r}
+library(AnnotationDbi)
+#human readable 
+process_alias <- Term(names(go2eg))
+```
+
+## Network Analysis on Boot.Vote
+
+Read in the probe and CNA feature information stored in the Luminal B ExpressionSet.
+
+```{r}
+library(Biobase)
+yinfo <- pData(featureData(readRDS(file = file.path(filterdir,"disc-mrna-eset-nostd-union-dropout-std-LumB.rds"))))
+xinfo <- pData(featureData(readRDS(file = file.path(filterdir,"disc-cna-eset-nostd-union-dropout-multi-std-LumB.rds"))))
+yinfo$start <- as.integer(yinfo$start)
+yinfo$end <- as.integer(yinfo$end)
+xinfo$start <- as.integer(xinfo$start)
+xinfo$end <- as.integer(xinfo$end)
+```
+
+### Collapse probes to gene level
+
+For the network analysis, we decided to collapse probe information down onto the gene-level. For example, if two probes map to the same locus, we take the union of their edges to form a single node. First, import and label fetures of the CV.Vote network. 
+
+```{r}
+net <- bv$bv
+rownames(net$xy) <- xinfo$id; colnames(net$xy) <- yinfo$id;
+rownames(net$yy) <- yinfo$id; colnames(net$yy) <- yinfo$id;
+bdeg <- bv$bdeg
+colnames(bdeg$xy) <- xinfo$id; colnames(bdeg$yy) <- yinfo$id;
+```
+
+The following code merges probes onto the gene level. 
+
+```{r}
+egtab <- table(yinfo$EntrezReannotated)
+eg2probeid <- lapply(names(egtab), function(eg) {
+  yinfo$id[yinfo$EntrezReannotated %in% eg]  
+})
+#take union of edges between probes with same Entrez gene id
+meg <- eg2probeid[sapply(eg2probeid, length) > 1]
+for(m in meg) { 
+  uyedge <- apply(X = net$yy[m,], MARGIN = 2, FUN = max)
+  uxedge <- apply(X = net$xy[,m], MARGIN = 1, FUN = max)
+  net$yy[m[1],] <- uyedge
+  net$xy[,m[1]] <- uxedge
+}
+#drop secondary listing of probes
+secprobes <- unlist(sapply(meg, function(m) m[2:length(m)]))
+keepers <- setdiff(rownames(net$yy), secprobes)
+net$yy <- net$yy[keepers,keepers]
+net$xy <- net$xy[,keepers]
+#adjust order of yinfo
+yinfo <- yinfo[match(keepers,yinfo$id),]
+bdeg$yy <- bdeg$yy[,keepers]
+```
+
+Next we replace the probe ID with the Entrez gene id. 
+
+```{r}
+probe2eg <- yinfo[,c("id", "EntrezReannotated")]
+#all duplicates should be missing values now. 
+eg <- probe2eg$EntrezReannotated
+stopifnot(all(is.na(eg[which(duplicated(eg))])))
+#replace ID with Entrez gene
+yinfo$probeid <- yinfo$id
+yinfo$id <- ifelse(is.na(eg), yinfo$id, eg)
+stopifnot(!anyDuplicated(yinfo$id))
+```
+
+Update the feature name labels of the network after merging the probes to the gene level. 
+
+```{r}
+rownames(net$xy) <- xinfo$id; colnames(net$xy) <- yinfo$id;
+rownames(net$yy) <- yinfo$id; colnames(net$yy) <- yinfo$id;
+colnames(bdeg$xy) <- xinfo$id; colnames(bdeg$yy) <- yinfo$id; 
+```
+
+Now there are `r length(secprobes)` mRNA feature nodes lost from merging probes, leaving `r length(keepers)` mRNA gene nodes. Import the network to igraph. 
+
+```{r}
+library(spacemap)
+ig <- spacemap::adj2igraph(yy = net$yy, xy = net$xy, yinfo = yinfo, xinfo = xinfo)
+```
+
+### Hub analysis
+
+Rank the CNA- and mRNA- hubs hubs according to their (in + out) degree. <!--the average degree rank. Accordingly, the most highly ranked hubs will have the most consistently high degree across the network ensemble.-->
+
+```{r}
+ig <- rankHub(ig = ig, level = "y")
+ig <- rankHub(ig = ig, level = "x")
+```
+
+Next label CNA--mRNA edges as being regulated in cis or in trans. 
+
+```{r}
+library(IRanges)
+ig <- cisTrans(ig = ig, level = "x-y", cw = 2e6)
+```
+
+We then report CNA-hubs with their cis genes. 
+
+```{r}
+xhubs <- reportHubs(ig, top = 100, level = "x")
+```
+
+```{r, echo=FALSE}
+knitr::kable(xhubs, row.names = FALSE)
+```
+
+We will want these results in LaTex format as well.  Import the utility functions to write these results for the LaTex format. 
+
+```{r}
+source("tab2tex.R")
+netadir <- "~/scratch-data/neta-metabric/disc-neta/"
+xhubs2textab(xhubs = xhubs, 
+             cap = "CNA-hubs of Luminal B subtype discovery samples and ranked by out degree.", 
+             tfile = file.path(netadir, "lumb-bv-p90-01-xhubs-deg.tex"))
+#under 
+tmp <- rankHub(ig = ig, bdeg = bdeg$xy, level = "x")
+xhubs2textab(xhubs =  reportHubs(tmp, top = 100, level = "x"), 
+             cap = "CNA-hubs of Luminal B subtype discovery samples and ranked by mean rank of degree.", 
+             tfile = file.path(netadir, "lumb-bv-p90-01-xhubs-bdeg.tex"))
+```
+
+Report what are the stable mRNA-hub genes: 
+
+```{r}
+yhubs <- reportHubs(ig, top = 50, level = "y")
+```
+
+```{r, echo=FALSE}
+knitr::kable(yhubs, row.names = FALSE)
+```
+
+Obtain the GO-neighbor percentages for CNA hubs. 
+
+```{r}
+hgp <- xHubEnrich(ig = ig, go2eg = go2eg)
+hgp2 <- hgp[hgp$neighbor_percentage > 50 & hgp$degree > 7,]
+```
+
+Report the larger CNA-hubs (degree > 7) with with at least 50% GO-neighbor percentage. 
+
+```{r, echo=FALSE}
+knitr::kable(hgp2)
+```
+
+### Module analysis
+
+Use cluster edge betweenness to find modules. 
+
+```{r}
+library(igraph)
+mods <- cluster_edge_betweenness(ig)
+```
+
+Test for module Enrichment with the hypergeometric test. 
+
+```{r}
+outmod <- modEnrich(ig = ig, mods = mods, levels = "y", go2eg = go2eg, process_alias = process_alias, prefix = "R")
+```
+
+Report the significantly enriched GO terms organized by module.
+
+```{r, eval = FALSE}
+outmod$etab
+```
+
+```{r, echo=FALSE}
+knitr::kable(outmod$etab, row.names = FALSE)
+```
+
+We export the module-GO enrichment results in LaTex format. 
+
+```{r}
+mod2textab(etab = outmod$etab, 
+           cap ="Enrichment of GO terms in network modules of Luminal B subtype discovery samples (ranked by most significant)", 
+           tfile = file.path(netadir, "lumb-bv-p90-01-etab.tex"))
+```
+
+## Save results
+
+```{r}
+filename <- file.path(netadir, "lumb-boot-vote-01.graphml")
+#delete nodes without edges from the graph object
+vis <- delete_vertices(graph = outmod$ig, v = V(outmod$ig)[igraph::degree(outmod$ig) == 0])
+igraph::write_graph(graph = vis, file = filename, format = "graphml")
+save.image(file = file.path(netadir, "lumb-full-analysis.rda"))
+```

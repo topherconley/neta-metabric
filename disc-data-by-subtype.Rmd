@@ -10,7 +10,7 @@ output:
 
 ```{r setup, include=FALSE}
 library(knitr)
-knitr::opts_chunk$set(cache=TRUE, cache.path = "~/scratch-data/neta-metabric/disc-filtered/disc-data-by-subtype-cache/")
+knitr::opts_chunk$set(cache=TRUE)
 ```
 
 The following analysis documents how we organize the METABRIC discovery data set into a standard `Biobase::ExpressionSet` format before input into the spaceMap model. The goal of this analysis is to ultimately fit the spaceMap model to infer a network encoding how copy number alteration (CNA) intervals impact RNA expression in breast cancer subtypes. Below we outline the data processing steps of this document in preparation for model fitting. 

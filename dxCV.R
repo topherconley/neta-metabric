@@ -32,7 +32,6 @@ dxsmap <- function(file, lims = T, .probs = c(0, 0.25)) {
   load(file)
   library(spacemap)
   
-  
   #number of edges y-y
   nyy <- nonZeroUpper(cvsmap$cvVote$yy, 0.0)
   #number of edges x-y

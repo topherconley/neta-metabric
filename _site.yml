@@ -1,20 +1,20 @@
 name: "neta-metabric"
 output_dir: "docs"
-exclude: ["README.md", "basal-disc/"]
+exclude: ["README.md", "basal-disc/", "her2-disc/", "lumb-disc/",]
 navbar:
   left:
     - text: "Home"
       href: index.html
     - text: "Discovery Data Set"
       menu:
-        - text: "1. Data"
+        - text: "Data Processing"
           href: disc-data-by-subtype.html
-        - text: "2. CV Vote"
-          menu: 
-            - text: Basal
-            - href: bas-cv.html
-            - text: Her2
-            - href: her2-cv.html
+        - text: "Luminal B"
+          href: disc-lumb-pipeline.html
+        - text: "Her2"
+          href: disc-her2-pipeline.html
+        - text: "Basal-like"
+          href: disc-basal-pipeline.html
     - text: "METABRIC Code"
       icon: fa-github
       href: https://github.com/topherconley/neta-metabric
@@ -22,7 +22,7 @@ navbar:
       href: https://topherconley.github.io/spacemap/
 output:
   html_document:
-    theme: united
+    theme: flatly
     include:
       after_body: footer.html
     
